@@ -8,6 +8,61 @@ let savedJobIds = JSON.parse(localStorage.getItem('savedJobIds')) || [];
 let userPrefs = JSON.parse(localStorage.getItem('jobTrackerPreferences')) || null;
 let showOnlyMatches = false;
 
+function getTodayKey() {
+    const d = new Date();
+    return `jobTrackerDigest_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// --- Digest Logic ---
+
+function generateDigest() {
+    if (!userPrefs) return;
+
+    // Sort all jobs by Match Score then Recency
+    const sorted = [...allJobs].sort((a, b) => {
+        const scoreB = calculateMatchScore(b, userPrefs);
+        const scoreA = calculateMatchScore(a, userPrefs);
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return a.postedDaysAgo - b.postedDaysAgo;
+    });
+
+    const top10 = sorted.slice(0, 10);
+    localStorage.setItem(getTodayKey(), JSON.stringify(top10));
+    handleRouteChange(); // Refresh view
+}
+
+function getStoredDigest() {
+    return JSON.parse(localStorage.getItem(getTodayKey()));
+}
+
+function copyDigestToClipboard() {
+    const digest = getStoredDigest();
+    if (!digest) return;
+
+    const text = `Top 10 Jobs For You — 9AM Digest (${new Date().toLocaleDateString()})\n\n` +
+        digest.map((j, i) => `${i + 1}. ${j.title} at ${j.company} (${j.location})\n   Match Score: ${calculateMatchScore(j, userPrefs)}%\n   Apply: ${j.applyUrl}`).join('\n\n') +
+        `\n\nThis digest was generated based on your preferences.`;
+
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Digest copied to clipboard!");
+    });
+}
+
+function createEmailDraft() {
+    const digest = getStoredDigest();
+    if (!digest) return;
+
+    const subject = encodeURIComponent("My 9AM Job Digest");
+    const body = encodeURIComponent(`Top 10 Jobs For You — 9AM Digest (${new Date().toLocaleDateString()})\n\n` +
+        digest.map((j, i) => `${i + 1}. ${j.title} at ${j.company} (${j.location})\n   Match Score: ${calculateMatchScore(j, userPrefs)}%\n   Apply: ${j.applyUrl}`).join('\n\n') +
+        `\n\nThis digest was generated based on your preferences.`);
+
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
+
+// --- Match Score Engine ---
+// ... (previous logic remains identical)
+
 function savePreferences(e) {
     if (e) e.preventDefault();
 
@@ -390,6 +445,9 @@ window.viewJob = viewJob;
 window.closeModal = closeModal;
 window.applyFilters = applyFilters;
 window.toggleMatchFilter = toggleMatchFilter;
+window.generateDigest = generateDigest;
+window.copyDigestToClipboard = copyDigestToClipboard;
+window.createEmailDraft = createEmailDraft;
 window.toggleMobileMenu = () => document.querySelector('.kn-nav').classList.toggle('kn-nav--open');
 
 window.addEventListener('hashchange', handleRouteChange);
