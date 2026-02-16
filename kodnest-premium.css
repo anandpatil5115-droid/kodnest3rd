@@ -650,6 +650,66 @@ input[type="range"] {
     margin-top: var(--space-8);
 }
 
+/* JOB STATUS BADGES */
+.kn-status-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.kn-status--not-applied {
+    background: var(--color-bg);
+    color: #666;
+}
+
+.kn-status--applied {
+    background: #E3F2FD;
+    color: #1565C0;
+}
+
+.kn-status--rejected {
+    background: #FFEBEE;
+    color: #C62828;
+}
+
+.kn-status--selected {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+
+/* TOAST NOTIFICATION */
+#kn-toast-container {
+    position: fixed;
+    bottom: var(--space-24);
+    right: var(--space-24);
+    z-index: 3000;
+}
+
+.kn-toast {
+    background: #111;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    margin-top: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    animation: kn-slide-in 0.3s ease-out;
+    font-size: 14px;
+}
+
+@keyframes kn-slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
 /* RESPONSIVE */
 @media (max-width: 900px) {
     .kn-nav {

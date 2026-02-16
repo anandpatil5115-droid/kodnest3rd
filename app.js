@@ -6,11 +6,49 @@
 // --- State Management ---
 let savedJobIds = JSON.parse(localStorage.getItem('savedJobIds')) || [];
 let userPrefs = JSON.parse(localStorage.getItem('jobTrackerPreferences')) || null;
+let jobStatuses = JSON.parse(localStorage.getItem('jobTrackerStatus')) || {};
+let statusHistory = JSON.parse(localStorage.getItem('jobTrackerStatusHistory')) || [];
 let showOnlyMatches = false;
 
 function getTodayKey() {
     const d = new Date();
     return `jobTrackerDigest_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// --- Status Logic ---
+
+function updateJobStatus(jobId, status) {
+    jobStatuses[jobId] = status;
+    localStorage.setItem('jobTrackerStatus', JSON.stringify(jobStatuses));
+
+    // Add to history
+    const job = allJobs.find(j => j.id === jobId);
+    statusHistory.unshift({
+        title: job.title,
+        company: job.company,
+        status: status,
+        date: new Date().toLocaleString('en-IN')
+    });
+    // Keep last 20 history items
+    if (statusHistory.length > 20) statusHistory.pop();
+    localStorage.setItem('jobTrackerStatusHistory', JSON.stringify(statusHistory));
+
+    showToast(`Status updated: ${status}`);
+    handleRouteChange();
+}
+
+function showToast(message) {
+    let container = document.getElementById('kn-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'kn-toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'kn-toast';
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
 // --- Digest Logic ---
@@ -131,12 +169,15 @@ function renderJobCard(job) {
     const score = calculateMatchScore(job, userPrefs);
     const sourceClass = `kn-source--${job.source.toLowerCase()}`;
     const badgeClass = getScoreBadgeClass(score);
+    const currentStatus = jobStatuses[job.id] || 'Not Applied';
+    const statusClass = `kn-status--${currentStatus.toLowerCase().replace(' ', '-')}`;
 
     return `
         <div class="kn-job-card">
             <div class="kn-job-header">
                 <span class="kn-company">${job.company}</span>
                 <div style="display: flex; gap: 8px; align-items: center;">
+                    <span class="kn-status-badge ${statusClass}">${currentStatus}</span>
                     ${userPrefs ? `<span class="kn-score-badge ${badgeClass}">${score}% Match</span>` : ''}
                     <span class="kn-source-badge ${sourceClass}">${job.source}</span>
                 </div>
@@ -148,7 +189,19 @@ function renderJobCard(job) {
                 <div class="kn-meta-item">💰 ${job.salaryRange}</div>
                 <div class="kn-meta-item">🕒 ${job.postedDaysAgo} days ago</div>
             </div>
-            <div class="kn-job-footer">
+            <div style="margin-top: 16px; border-top: 1px solid #eee; padding-top: 16px;">
+                <label class="kn-label" style="font-size: 11px;">Update Status</label>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    ${['Not Applied', 'Applied', 'Rejected', 'Selected'].map(s => `
+                        <button class="kn-button" 
+                                style="font-size: 10px; padding: 6px 8px; flex: 1; ${currentStatus === s ? 'background: #111; color: #fff;' : 'background: #f5f5f5;'}" 
+                                onclick="window.updateJobStatus(${job.id}, '${s}')">
+                            ${s}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="kn-job-footer" style="margin-top: 24px;">
                 <button class="kn-button kn-button--secondary" onclick="viewJob(${job.id})">View</button>
                 <button class="kn-button kn-button--secondary" onclick="${isSaved ? 'unsaveJob' : 'saveJob'}(${job.id})">${isSaved ? 'Unsave' : 'Save'}</button>
                 <a href="${job.applyUrl}" target="_blank" class="kn-button kn-button--primary">Apply</a>
@@ -174,6 +227,13 @@ function renderFilterBar() {
                     <option value="">All Locations</option>
                     <option>Bangalore</option><option>Mumbai</option><option>Chennai</option>
                     <option>Hyderabad</option><option>Pune</option><option>Remote</option>
+                </select>
+            </div>
+            <div class="kn-filter-group">
+                <label class="kn-label">Status</label>
+                <select class="kn-select" id="status-filter" onchange="applyFilters()">
+                    <option value="">All Status</option>
+                    <option>Not Applied</option><option>Applied</option><option>Rejected</option><option>Selected</option>
                 </select>
             </div>
             <div class="kn-filter-group">
@@ -266,12 +326,14 @@ function parseSalary(salaryStr) {
 function applyFilters() {
     const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || "";
     const locFilter = document.getElementById('location-filter')?.value || "";
+    const statusFilter = document.getElementById('status-filter')?.value || "";
     const modeFilter = document.getElementById('mode-filter')?.value || "";
     const sortBy = document.getElementById('sort-filter')?.value || "latest";
 
     let filtered = allJobs.filter(job => {
         const matchesSearch = job.title.toLowerCase().includes(searchTerm) || job.company.toLowerCase().includes(searchTerm);
         const matchesLoc = !locFilter || job.location === locFilter;
+        const matchesStatus = !statusFilter || (jobStatuses[job.id] || 'Not Applied') === statusFilter;
         const matchesMode = !modeFilter || job.mode === modeFilter;
 
         let matchesThreshold = true;
@@ -279,7 +341,7 @@ function applyFilters() {
             matchesThreshold = calculateMatchScore(job, userPrefs) >= userPrefs.minMatchScore;
         }
 
-        return matchesSearch && matchesLoc && matchesMode && matchesThreshold;
+        return matchesSearch && matchesLoc && matchesStatus && matchesMode && matchesThreshold;
     });
 
     // Sorting
@@ -455,6 +517,24 @@ const routes = {
                                 </div>
                             `).join('')}
                         </div>
+                        
+                        ${statusHistory.length > 0 ? `
+                        <div style="background: #fff; padding: 40px; border-top: 2px solid #eee;">
+                            <h3 style="margin-bottom: 24px;">Recent Status Updates</h3>
+                            <div class="kn-job-list" style="grid-template-columns: 1fr;">
+                                ${statusHistory.slice(0, 5).map(h => `
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f5f5f5;">
+                                        <div>
+                                            <div style="font-weight: 500;">${h.title}</div>
+                                            <div style="font-size: 12px; color: #888;">${h.company} • ${h.date}</div>
+                                        </div>
+                                        <span class="kn-status-badge kn-status--${h.status.toLowerCase().replace(' ', '-')}" style="height: fit-content;">${h.status}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
                         <footer class="kn-digest-footer">
                             <p>This digest was generated based on your preferences at 9:00 AM.</p>
                             <p class="kn-simulation-note">Simulated for demonstration purposes.</p>
@@ -513,6 +593,7 @@ window.toggleMatchFilter = toggleMatchFilter;
 window.generateDigest = generateDigest;
 window.copyDigestToClipboard = copyDigestToClipboard;
 window.createEmailDraft = createEmailDraft;
+window.updateJobStatus = updateJobStatus;
 window.toggleMobileMenu = () => document.querySelector('.kn-nav').classList.toggle('kn-nav--open');
 
 window.addEventListener('hashchange', handleRouteChange);
