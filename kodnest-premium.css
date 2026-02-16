@@ -1,0 +1,283 @@
+/* 
+  KodNest Premium Build System
+  Philosophy: Calm, Intentional, Coherent, Confident
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+
+:root {
+    /* Color System */
+    --color-bg: #F7F6F3;
+    --color-text: #111111;
+    --color-accent: #8B0000;
+    --color-success: #4F7942;
+    --color-warning: #B8860B;
+    --color-border: rgba(17, 17, 17, 0.1);
+    --color-white: #FFFFFF;
+
+    /* Spacing System */
+    --space-8: 8px;
+    --space-16: 16px;
+    --space-24: 24px;
+    --space-40: 40px;
+    --space-64: 64px;
+
+    /* Typography */
+    --font-serif: 'Playfair Display', serif;
+    --font-sans: 'Inter', sans-serif;
+
+    /* Shared Rules */
+    --radius: 2px;
+    --transition: 180ms ease-in-out;
+}
+
+/* Reset & Base */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+/* Global Layout Structure */
+.kn-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* TOP BAR */
+.kn-top-bar {
+    height: 56px;
+    padding: 0 var(--space-24);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-white);
+    font-size: 14px;
+}
+
+.kn-project-name {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.kn-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    color: #666;
+}
+
+.kn-badge {
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #eee;
+    border-radius: var(--radius);
+}
+
+.kn-badge--shipped {
+    background: var(--color-success);
+    color: white;
+}
+
+/* CONTEXT HEADER */
+.kn-header {
+    padding: var(--space-64) var(--space-24) var(--space-40);
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.kn-title {
+    font-size: 48px;
+    margin-bottom: var(--space-8);
+}
+
+.kn-subtext {
+    font-size: 18px;
+    color: #666;
+    max-width: 720px;
+}
+
+/* MAIN CONTENT SPLIT */
+.kn-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 7fr 3fr;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    gap: var(--space-40);
+    padding: 0 var(--space-24) var(--space-64);
+}
+
+.kn-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-24);
+}
+
+.kn-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-24);
+}
+
+/* COMPONENTS */
+.kn-card {
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-24);
+}
+
+.kn-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    width: fit-content;
+}
+
+.kn-button--primary {
+    background: var(--color-accent);
+    color: white;
+}
+
+.kn-button--primary:hover {
+    background: #700000;
+}
+
+.kn-button--secondary {
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.kn-button--secondary:hover {
+    background: rgba(17, 17, 17, 0.05);
+}
+
+.kn-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    transition: var(--transition);
+}
+
+.kn-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+/* PROOF FOOTER */
+.kn-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--color-white);
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-16) var(--space-24);
+    z-index: 100;
+}
+
+.kn-checklist {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-40);
+}
+
+.kn-check-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+}
+
+.kn-check-item input[type="checkbox"] {
+    accent-color: var(--color-accent);
+    width: 16px;
+    height: 16px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+    .kn-main {
+        grid-template-columns: 1fr;
+        padding-bottom: 200px;
+    }
+
+    .kn-checklist {
+        flex-wrap: wrap;
+        gap: var(--space-16);
+    }
+}
+
+/* UTILITIES */
+.kn-mt-8 {
+    margin-top: var(--space-8);
+}
+
+.kn-mt-16 {
+    margin-top: var(--space-16);
+}
+
+.kn-mt-24 {
+    margin-top: var(--space-24);
+}
+
+.kn-mt-40 {
+    margin-top: var(--space-40);
+}
+
+.kn-prompt-box {
+    background: #1e1e1e;
+    color: #fff;
+    padding: var(--space-16);
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    border-radius: var(--radius);
+    position: relative;
+    overflow: hidden;
+}
+
+.kn-text-block {
+    max-width: 720px;
+}
