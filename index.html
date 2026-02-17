@@ -2084,7 +2084,7 @@ Core Capabilities:
         // --- PROJECT 4: AI RESUME BUILDER APP ---
 
         function getResumeData() {
-            const saved = localStorage.getItem('resume_data');
+            const saved = localStorage.getItem('resumeBuilderData');
             if (saved) return JSON.parse(saved);
             return {
                 personal: { name: '', email: '', phone: '', location: '' },
@@ -2098,8 +2098,76 @@ Core Capabilities:
         }
 
         function saveResumeData(data) {
-            localStorage.setItem('resume_data', JSON.stringify(data));
+            localStorage.setItem('resumeBuilderData', JSON.stringify(data));
             render();
+        }
+
+        function calculateATSScore(data) {
+            let score = 0;
+            const suggestions = [];
+
+            // +15 if summary length is 40-120 words
+            const summaryWords = data.summary.trim().split(/\s+/).filter(w => w.length > 0).length;
+            if (summaryWords >= 40 && summaryWords <= 120) {
+                score += 15;
+            } else if (summaryWords < 40) {
+                suggestions.push('Write a stronger summary (40–120 words).');
+            }
+
+            // +10 if at least 2 projects
+            if (data.projects.length >= 2) {
+                score += 10;
+            } else {
+                suggestions.push('Add at least 2 projects.');
+            }
+
+            // +10 if at least 1 experience entry
+            if (data.experience.length >= 1) {
+                score += 10;
+            } else {
+                suggestions.push('Add at least 1 work experience entry.');
+            }
+
+            // +10 if skills list has ≥8 items
+            const skillsArray = data.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            if (skillsArray.length >= 8) {
+                score += 10;
+            } else {
+                suggestions.push('Add more skills (target 8+).');
+            }
+
+            // +10 if GitHub or LinkedIn link exists
+            if (data.links.github || data.links.linkedin) {
+                score += 10;
+            } else {
+                suggestions.push('Add GitHub or LinkedIn profile link.');
+            }
+
+            // +15 if any experience/project bullet contains numbers
+            const hasNumbers = [...data.experience, ...data.projects].some(item => {
+                const desc = item.description || '';
+                return /\d+[%kKmM]?|\d+\+|[0-9]/.test(desc);
+            });
+            if (hasNumbers) {
+                score += 15;
+            } else if (data.experience.length > 0 || data.projects.length > 0) {
+                suggestions.push('Add measurable impact (numbers, %, metrics) in bullets.');
+            }
+
+            // +10 if education has complete fields
+            const hasCompleteEducation = data.education.some(edu =>
+                edu.degree && edu.school && edu.year
+            );
+            if (hasCompleteEducation) {
+                score += 10;
+            } else if (data.education.length > 0) {
+                suggestions.push('Complete all education fields (degree, school, year).');
+            }
+
+            return {
+                score: Math.min(score, 100),
+                suggestions: suggestions.slice(0, 3) // Max 3 suggestions
+            };
         }
 
         function loadSampleData() {
@@ -2110,7 +2178,7 @@ Core Capabilities:
                     phone: '+1 (555) 123-4567',
                     location: 'San Francisco, CA'
                 },
-                summary: 'Full-stack developer with 3+ years of experience building scalable web applications. Passionate about clean code, user experience, and solving complex problems.',
+                summary: 'Full-stack developer with 3+ years of experience building scalable web applications. Passionate about clean code, user experience, and solving complex problems. Specialized in React, Node.js, and cloud infrastructure.',
                 education: [
                     {
                         degree: 'B.S. Computer Science',
@@ -2124,29 +2192,89 @@ Core Capabilities:
                         title: 'Software Engineer',
                         company: 'Tech Corp',
                         duration: '2021 - Present',
-                        description: 'Built microservices architecture serving 1M+ users. Reduced API latency by 40% through optimization.'
+                        description: 'Built microservices architecture serving 1M+ users. Reduced API latency by 40% through optimization. Led team of 3 engineers.'
                     },
                     {
                         title: 'Junior Developer',
                         company: 'Startup Inc',
                         duration: '2020 - 2021',
-                        description: 'Developed React components for customer dashboard. Implemented CI/CD pipeline.'
+                        description: 'Developed React components for customer dashboard. Implemented CI/CD pipeline reducing deployment time by 60%.'
                     }
                 ],
                 projects: [
                     {
                         name: 'AI Chat Platform',
                         tech: 'React, Node.js, OpenAI API',
-                        description: 'Built real-time chat application with AI-powered responses. 10k+ active users.'
+                        description: 'Built real-time chat application with AI-powered responses. 10k+ active users, 95% uptime.'
+                    },
+                    {
+                        name: 'E-commerce Analytics',
+                        tech: 'Python, PostgreSQL, AWS',
+                        description: 'Created analytics dashboard processing 500k+ transactions daily. Improved reporting speed by 3x.'
                     }
                 ],
-                skills: 'JavaScript, React, Node.js, Python, SQL, AWS, Docker, Git',
+                skills: 'JavaScript, React, Node.js, Python, SQL, AWS, Docker, Git, TypeScript, MongoDB',
                 links: {
                     github: 'github.com/alexjohnson',
                     linkedin: 'linkedin.com/in/alexjohnson'
                 }
             };
             saveResumeData(sample);
+        }
+
+        // Helper functions for managing sections
+        function addEducation() {
+            const data = getResumeData();
+            data.education.push({ degree: '', school: '', year: '', gpa: '' });
+            saveResumeData(data);
+        }
+
+        function removeEducation(index) {
+            const data = getResumeData();
+            data.education.splice(index, 1);
+            saveResumeData(data);
+        }
+
+        function updateEducation(index, field, value) {
+            const data = getResumeData();
+            data.education[index][field] = value;
+            saveResumeData(data);
+        }
+
+        function addExperience() {
+            const data = getResumeData();
+            data.experience.push({ title: '', company: '', duration: '', description: '' });
+            saveResumeData(data);
+        }
+
+        function removeExperience(index) {
+            const data = getResumeData();
+            data.experience.splice(index, 1);
+            saveResumeData(data);
+        }
+
+        function updateExperience(index, field, value) {
+            const data = getResumeData();
+            data.experience[index][field] = value;
+            saveResumeData(data);
+        }
+
+        function addProject() {
+            const data = getResumeData();
+            data.projects.push({ name: '', tech: '', description: '' });
+            saveResumeData(data);
+        }
+
+        function removeProject(index) {
+            const data = getResumeData();
+            data.projects.splice(index, 1);
+            saveResumeData(data);
+        }
+
+        function updateProject(index, field, value) {
+            const data = getResumeData();
+            data.projects[index][field] = value;
+            saveResumeData(data);
         }
 
         function renderResumeHome() {
@@ -2259,44 +2387,227 @@ Core Capabilities:
                                     </div>
                                 </div>
 
-                                <div class="text-center text-sm text-slate-500 pb-8">
-                                    Education, Experience, and Projects sections coming soon...
+                                <!-- Education -->
+                                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="font-bold text-slate-900">Education</h3>
+                                        <button onclick="addEducation()" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark">
+                                            + Add
+                                        </button>
+                                    </div>
+                                    ${data.education.map((edu, i) => `
+                                        <div class="mb-4 pb-4 border-b border-slate-100 last:border-0">
+                                            <div class="flex justify-between items-start mb-3">
+                                                <span class="text-xs font-bold text-slate-400">Entry ${i + 1}</span>
+                                                <button onclick="removeEducation(${i})" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                                            </div>
+                                            <div class="space-y-3">
+                                                <input type="text" placeholder="Degree (e.g., B.S. Computer Science)" value="${edu.degree || ''}"
+                                                    oninput="updateEducation(${i}, 'degree', this.value)"
+                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                <input type="text" placeholder="School/University" value="${edu.school || ''}"
+                                                    oninput="updateEducation(${i}, 'school', this.value)"
+                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                <div class="grid grid-cols-2 gap-3">
+                                                    <input type="text" placeholder="Year" value="${edu.year || ''}"
+                                                        oninput="updateEducation(${i}, 'year', this.value)"
+                                                        class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                    <input type="text" placeholder="GPA (optional)" value="${edu.gpa || ''}"
+                                                        oninput="updateEducation(${i}, 'gpa', this.value)"
+                                                        class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    ${data.education.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">No education entries yet</p>' : ''}
+                                </div>
+
+                                <!-- Experience -->
+                                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="font-bold text-slate-900">Experience</h3>
+                                        <button onclick="addExperience()" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark">
+                                            + Add
+                                        </button>
+                                    </div>
+                                    ${data.experience.map((exp, i) => `
+                                        <div class="mb-4 pb-4 border-b border-slate-100 last:border-0">
+                                            <div class="flex justify-between items-start mb-3">
+                                                <span class="text-xs font-bold text-slate-400">Entry ${i + 1}</span>
+                                                <button onclick="removeExperience(${i})" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                                            </div>
+                                            <div class="space-y-3">
+                                                <input type="text" placeholder="Job Title" value="${exp.title || ''}"
+                                                    oninput="updateExperience(${i}, 'title', this.value)"
+                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                <input type="text" placeholder="Company" value="${exp.company || ''}"
+                                                    oninput="updateExperience(${i}, 'company', this.value)"
+                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                <input type="text" placeholder="Duration (e.g., 2021 - Present)" value="${exp.duration || ''}"
+                                                    oninput="updateExperience(${i}, 'duration', this.value)"
+                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                <textarea placeholder="Description (include metrics!)" 
+                                                    oninput="updateExperience(${i}, 'description', this.value)"
+                                                    class="w-full h-24 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none text-sm">${exp.description || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    ${data.experience.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">No experience entries yet</p>' : ''}
+                                </div>
+
+                                <!-- Projects -->
+                                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="font-bold text-slate-900">Projects</h3>
+                                        <button onclick="addProject()" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark">
+                                            + Add
+                                        </button>
+                                    </div>
+                                    ${data.projects.map((proj, i) => `
+                                        <div class="mb-4 pb-4 border-b border-slate-100 last:border-0">
+                                            <div class="flex justify-between items-start mb-3">
+                                                <span class="text-xs font-bold text-slate-400">Entry ${i + 1}</span>
+                                                <button onclick="removeProject(${i})" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                                            </div>
+                                            <div class="space-y-3">
+                                                <input type="text" placeholder="Project Name" value="${proj.name || ''}"
+                                                    oninput="updateProject(${i}, 'name', this.value)"
+                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                <input type="text" placeholder="Technologies Used" value="${proj.tech || ''}"
+                                                    oninput="updateProject(${i}, 'tech', this.value)"
+                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                <textarea placeholder="Description (include impact!)" 
+                                                    oninput="updateProject(${i}, 'description', this.value)"
+                                                    class="w-full h-24 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none text-sm">${proj.description || ''}</textarea>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    ${data.projects.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">No projects yet</p>' : ''}
                                 </div>
                             </div>
 
-                            <!-- Right: Live Preview -->
-                            <div class="bg-white rounded-xl border border-slate-200 p-8 sticky top-24 h-fit shadow-sm">
-                                <div class="text-center mb-6 pb-6 border-b border-slate-200">
-                                    <h1 class="text-3xl font-serif font-bold text-slate-900 mb-2">${data.personal.name || 'Your Name'}</h1>
-                                    <div class="text-sm text-slate-600 space-x-3">
-                                        <span>${data.personal.email || 'email@example.com'}</span>
-                                        ${data.personal.phone ? `<span>•</span><span>${data.personal.phone}</span>` : ''}
-                                        ${data.personal.location ? `<span>•</span><span>${data.personal.location}</span>` : ''}
-                                    </div>
-                                    ${data.links.github || data.links.linkedin ? `
-                                        <div class="text-sm text-slate-600 mt-2 space-x-3">
-                                            ${data.links.github ? `<span>${data.links.github}</span>` : ''}
-                                            ${data.links.linkedin ? `<span>${data.links.linkedin}</span>` : ''}
-                                        </div>
-                                    ` : ''}
+                            <!-- Right: Live Preview with ATS Score -->
+                            <div class="space-y-6">
+                                <!-- ATS Score Card -->
+                                <div class="bg-white rounded-xl border border-slate-200 p-6 sticky top-24 shadow-sm">
+                                    ${(() => {
+                    const atsResult = calculateATSScore(data);
+                    const scoreColor = atsResult.score >= 80 ? 'emerald' : atsResult.score >= 60 ? 'amber' : 'red';
+                    return `
+                                            <div class="text-center mb-4">
+                                                <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">ATS Readiness Score</h3>
+                                                <div class="relative w-32 h-32 mx-auto mb-4">
+                                                    <svg class="transform -rotate-90 w-32 h-32">
+                                                        <circle cx="64" cy="64" r="56" stroke="#e2e8f0" stroke-width="8" fill="none" />
+                                                        <circle cx="64" cy="64" r="56" 
+                                                            stroke="${scoreColor === 'emerald' ? '#10b981' : scoreColor === 'amber' ? '#f59e0b' : '#ef4444'}" 
+                                                            stroke-width="8" 
+                                                            fill="none"
+                                                            stroke-dasharray="${2 * Math.PI * 56}"
+                                                            stroke-dashoffset="${2 * Math.PI * 56 * (1 - atsResult.score / 100)}"
+                                                            stroke-linecap="round"
+                                                            class="transition-all duration-500" />
+                                                    </svg>
+                                                    <div class="absolute inset-0 flex items-center justify-center">
+                                                        <span class="text-4xl font-bold text-slate-900">${atsResult.score}</span>
+                                                    </div>
+                                                </div>
+                                                <p class="text-xs text-slate-500">Out of 100</p>
+                                            </div>
+                                            ${atsResult.suggestions.length > 0 ? `
+                                                <div class="mt-4 pt-4 border-t border-slate-100">
+                                                    <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Suggestions</h4>
+                                                    <ul class="space-y-2">
+                                                        ${atsResult.suggestions.map(s => `
+                                                            <li class="text-xs text-slate-600 flex items-start gap-2">
+                                                                <span class="text-amber-500 mt-0.5">•</span>
+                                                                <span>${s}</span>
+                                                            </li>
+                                                        `).join('')}
+                                                    </ul>
+                                                </div>
+                                            ` : `
+                                                <div class="mt-4 pt-4 border-t border-slate-100">
+                                                    <p class="text-xs text-emerald-600 font-medium">✓ Perfect score! Your resume is ATS-ready.</p>
+                                                </div>
+                                            `}
+                                        `;
+                })()}
                                 </div>
 
-                                ${data.summary ? `
-                                    <div class="mb-6">
-                                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Summary</h2>
-                                        <p class="text-sm text-slate-700 leading-relaxed">${data.summary}</p>
+                                <!-- Resume Preview -->
+                                <div class="bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
+                                    <div class="text-center mb-6 pb-6 border-b border-slate-200">
+                                        <h1 class="text-3xl font-serif font-bold text-slate-900 mb-2">${data.personal.name || 'Your Name'}</h1>
+                                        <div class="text-sm text-slate-600 space-x-3">
+                                            <span>${data.personal.email || 'email@example.com'}</span>
+                                            ${data.personal.phone ? `<span>•</span><span>${data.personal.phone}</span>` : ''}
+                                            ${data.personal.location ? `<span>•</span><span>${data.personal.location}</span>` : ''}
+                                        </div>
+                                        ${data.links.github || data.links.linkedin ? `
+                                            <div class="text-sm text-slate-600 mt-2 space-x-3">
+                                                ${data.links.github ? `<span>${data.links.github}</span>` : ''}
+                                                ${data.links.linkedin ? `<span>${data.links.linkedin}</span>` : ''}
+                                            </div>
+                                        ` : ''}
                                     </div>
-                                ` : ''}
 
-                                ${data.skills ? `
-                                    <div class="mb-6">
-                                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Skills</h2>
-                                        <p class="text-sm text-slate-700">${data.skills}</p>
+                                    ${data.summary ? `
+                                        <div class="mb-6">
+                                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Summary</h2>
+                                            <p class="text-sm text-slate-700 leading-relaxed">${data.summary}</p>
+                                        </div>
+                                    ` : ''}
+
+                                    ${data.education.length > 0 ? `
+                                        <div class="mb-6">
+                                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Education</h2>
+                                            ${data.education.map(edu => `
+                                                <div class="mb-3">
+                                                    <div class="font-semibold text-sm text-slate-900">${edu.degree || 'Degree'}</div>
+                                                    <div class="text-sm text-slate-600">${edu.school || 'School'} ${edu.year ? `• ${edu.year}` : ''}</div>
+                                                    ${edu.gpa ? `<div class="text-xs text-slate-500">GPA: ${edu.gpa}</div>` : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+
+                                    ${data.experience.length > 0 ? `
+                                        <div class="mb-6">
+                                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Experience</h2>
+                                            ${data.experience.map(exp => `
+                                                <div class="mb-4">
+                                                    <div class="font-semibold text-sm text-slate-900">${exp.title || 'Job Title'}</div>
+                                                    <div class="text-sm text-slate-600">${exp.company || 'Company'} ${exp.duration ? `• ${exp.duration}` : ''}</div>
+                                                    ${exp.description ? `<p class="text-sm text-slate-700 mt-1">${exp.description}</p>` : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+
+                                    ${data.projects.length > 0 ? `
+                                        <div class="mb-6">
+                                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Projects</h2>
+                                            ${data.projects.map(proj => `
+                                                <div class="mb-4">
+                                                    <div class="font-semibold text-sm text-slate-900">${proj.name || 'Project Name'}</div>
+                                                    ${proj.tech ? `<div class="text-xs text-slate-500 mb-1">${proj.tech}</div>` : ''}
+                                                    ${proj.description ? `<p class="text-sm text-slate-700">${proj.description}</p>` : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+
+                                    ${data.skills ? `
+                                        <div class="mb-6">
+                                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Skills</h2>
+                                            <p class="text-sm text-slate-700">${data.skills}</p>
+                                        </div>
+                                    ` : ''}
+
+                                    <div class="text-center text-xs text-slate-400 mt-8 pt-8 border-t border-slate-100">
+                                        Live Preview • Updates automatically
                                     </div>
-                                ` : ''}
-
-                                <div class="text-center text-xs text-slate-400 mt-8 pt-8 border-t border-slate-100">
-                                    Live Preview • Updates automatically
                                 </div>
                             </div>
                         </div>
@@ -2358,7 +2669,49 @@ Core Capabilities:
                                 </div>
                             ` : ''}
 
-                            ${!data.personal.name && !data.summary && !data.skills ? `
+                            <!-- Education -->
+                            ${data.education.length > 0 ? `
+                                <div class="mb-8">
+                                    <h2 class="text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1">Education</h2>
+                                    ${data.education.map(edu => `
+                                        <div class="mb-4">
+                                            <div class="font-bold text-sm text-black">${edu.degree || 'Degree'}</div>
+                                            <div class="text-sm text-black">${edu.school || 'School'} ${edu.year ? `• ${edu.year}` : ''}</div>
+                                            ${edu.gpa ? `<div class="text-xs text-black">GPA: ${edu.gpa}</div>` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+
+                            <!-- Experience -->
+                            ${data.experience.length > 0 ? `
+                                <div class="mb-8">
+                                    <h2 class="text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1">Experience</h2>
+                                    ${data.experience.map(exp => `
+                                        <div class="mb-4">
+                                            <div class="font-bold text-sm text-black">${exp.title || 'Job Title'}</div>
+                                            <div class="text-sm text-black">${exp.company || 'Company'} ${exp.duration ? `• ${exp.duration}` : ''}</div>
+                                            ${exp.description ? `<p class="text-sm text-black mt-1 leading-relaxed">${exp.description}</p>` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+
+                            <!-- Projects -->
+                            ${data.projects.length > 0 ? `
+                                <div class="mb-8">
+                                    <h2 class="text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1">Projects</h2>
+                                    ${data.projects.map(proj => `
+                                        <div class="mb-4">
+                                            <div class="font-bold text-sm text-black">${proj.name || 'Project Name'}</div>
+                                            ${proj.tech ? `<div class="text-xs text-black italic mb-1">${proj.tech}</div>` : ''}
+                                            ${proj.description ? `<p class="text-sm text-black leading-relaxed">${proj.description}</p>` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+
+                            ${!data.personal.name && !data.summary && !data.skills && data.education.length === 0 && data.experience.length === 0 && data.projects.length === 0 ? `
                                 <div class="text-center py-20 text-slate-400">
                                     <p class="text-lg mb-2">No content yet</p>
                                     <a href="#/resume/builder" class="text-primary hover:underline">Go to Builder →</a>
