@@ -411,6 +411,42 @@
 
                 // Combine and trim
                 return [...skillQs, ...baseQs].slice(0, 10);
+            },
+
+            generateIntel: (companyName) => {
+                const enterpriseList = ['Amazon', 'Google', 'Microsoft', 'Meta', 'TCS', 'Infosys', 'Wipro', 'HCL', 'Accenture', 'IBM', 'Oracle', 'JPMC', 'Goldman Sachs'];
+                const normalizedName = companyName.trim().toLowerCase();
+                const isEnterprise = enterpriseList.some(c => normalizedName.includes(c.toLowerCase()));
+
+                return {
+                    industry: 'Technology Services',
+                    sizeCategory: isEnterprise ? 'Enterprise (2000+)' : 'Startup (<200)',
+                    sizeValue: isEnterprise ? 'Enterprise' : 'Startup',
+                    hiringFocus: isEnterprise
+                        ? 'Structured DSA + Core CS fundamentals + Scalability'
+                        : 'Practical problem solving + Tech stack depth + Rapid delivery'
+                };
+            },
+
+            generateRoundMapping: (skills, sizeCategory) => {
+                const allSkills = Object.values(skills).flat();
+                const hasDSA = allSkills.includes('DSA');
+                const hasWeb = Object.keys(skills).includes('Web');
+
+                if (sizeCategory === 'Enterprise') {
+                    return [
+                        { round: 'Round 1: Online Assessment', focus: 'DSA + Aptitude', why: 'Filters high volume of applicants via automated problem solving.' },
+                        { round: 'Round 2: Technical Interview I', focus: 'Core DSA + Computer Science', why: 'Evaluates fundamental understanding of data structures and algorithms.' },
+                        { round: 'Round 3: Technical Interview II', focus: 'System Design / Projects', why: 'Checks ability to design scalable systems and project depth.' },
+                        { round: 'Round 4: Managerial / HR', focus: 'Culture Fit + Leadership', why: 'Ensures alignment with company values and long-term goals.' }
+                    ];
+                } else {
+                    return [
+                        { round: 'Round 1: Practical Coding', focus: hasWeb ? 'Live Feature / Bug Fix' : 'Functional Programming', why: 'Focuses on immediate job-readiness and hands-on stack expertise.' },
+                        { round: 'Round 2: Deep-Dive Discussion', focus: 'Architecture / Performance', why: 'Evaluates your understanding of why things work, not just how to code.' },
+                        { round: 'Round 3: Founder / Culture Fit', focus: 'Vision + Ownership', why: 'Critical for small teams where culture and proactivity are key.' }
+                    ];
+                }
             }
         };
 
@@ -447,6 +483,8 @@
                 e.preventDefault();
                 const extractedSkills = AnalysisEngine.extractSkills(formData.jdText);
                 const score = AnalysisEngine.calculateScore({ ...formData, extractedSkills });
+                const intel = AnalysisEngine.generateIntel(formData.company);
+                const roundMapping = AnalysisEngine.generateRoundMapping(extractedSkills, intel.sizeValue);
 
                 const entry = {
                     id: Date.now().toString(),
@@ -455,12 +493,8 @@
                     extractedSkills,
                     readinessScore: score,
                     plan: AnalysisEngine.generatePlan(extractedSkills),
-                    checklist: [
-                        { round: 'Round 1: Aptitude / Basics', items: ['Numerical ability', 'Logical reasoning', 'Verbal proficiency', 'Core CS fundamentals'] },
-                        { round: 'Round 2: DSA + Core CS', items: ['Data Structures', 'Algorithms', 'DBMS', 'Computer Networks'] },
-                        { round: 'Round 3: Tech Interview', items: ['Project deep-dive', 'Tech stack expertise', 'Live coding/System design'] },
-                        { round: 'Round 4: Managerial / HR', items: ['Behavioral questions', 'Company culture fit', 'Goal alignment'] }
-                    ],
+                    intel: intel,
+                    roundMapping: roundMapping,
                     questions: AnalysisEngine.generateQuestions(extractedSkills)
                 };
 
@@ -620,6 +654,30 @@ ${data.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
                                 <ReadinessScore score={data.readinessScore} />
                                 <p className="text-center text-[10px] text-slate-400 font-bold uppercase mt-2">Score updates live based on confidence</p>
                             </Card>
+
+                            <Card title="Company Intel">
+                                <div className="space-y-4">
+                                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Industry</div>
+                                        <div className="text-sm font-bold text-slate-700">{data.intel?.industry || 'Technology'}</div>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Size Category</div>
+                                        <div className="text-sm font-bold text-slate-700">{data.intel?.sizeCategory || 'Enterprise (2000+)'}</div>
+                                    </div>
+                                    <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl">
+                                        <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Typical Hiring Focus</div>
+                                        <div className="text-sm font-medium text-slate-700 leading-relaxed italic">
+                                            "{data.intel?.hiringFocus || 'Standard hiring practices applied.'}"
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Demo Mode</span>
+                                        <p className="text-[9px] text-slate-400 italic mt-0.5">Company intel generated heuristically.</p>
+                                    </div>
+                                </div>
+                            </Card>
+
                             <Card title="Skill Self-Assessment">
                                 <div className="space-y-6">
                                     {Object.entries(data.extractedSkills).map(([cat, skills]) => (
@@ -633,8 +691,8 @@ ${data.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
                                                             key={s}
                                                             onClick={() => toggleSkill(s)}
                                                             className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-2 ${isKnown
-                                                                    ? 'bg-primary border-primary text-white shadow-sm'
-                                                                    : 'bg-slate-50 border-slate-100 text-slate-600 hover:border-primary/30'
+                                                                ? 'bg-primary border-primary text-white shadow-sm'
+                                                                : 'bg-slate-50 border-slate-100 text-slate-600 hover:border-primary/30'
                                                                 }`}
                                                         >
                                                             {s}
@@ -698,23 +756,25 @@ ${data.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
                                         ))}
                                     </div>
                                 </Card>
-                                <Card title="Round-wise Checklist">
-                                    <div className="space-y-6">
-                                        {data.checklist.map((round, i) => (
-                                            <div key={i}>
-                                                <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest mb-3">{round.round}</h4>
-                                                <div className="grid grid-cols-1 gap-2">
-                                                    {round.items.map((item, j) => (
-                                                        <div key={j} className="flex items-center gap-2 text-xs text-slate-600 px-3 py-1.5 bg-white border border-slate-100 rounded-lg">
-                                                            <div className="w-4 h-4 rounded border border-slate-200 flex items-center justify-center">
-                                                                <Icon name="check" size={10} className="text-slate-100" />
-                                                            </div>
-                                                            {item}
-                                                        </div>
-                                                    ))}
+                                <Card title="Dynamic Round Mapping">
+                                    <div className="space-y-8">
+                                        {(data.roundMapping || []).map((round, i) => (
+                                            <div key={i} className="relative pl-8 pb-8 last:pb-0 border-l-2 border-slate-100 last:border-transparent">
+                                                <div className="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-white border-2 border-primary flex items-center justify-center font-black text-[8px] text-primary shadow-sm">{i + 1}</div>
+                                                <div className="mb-1">
+                                                    <h4 className="font-bold text-slate-900">{round.round}</h4>
+                                                    <div className="inline-block px-2 py-0.5 bg-indigo-50 text-primary text-[10px] font-bold rounded uppercase tracking-wider mb-2">{round.focus}</div>
+                                                </div>
+                                                <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                                                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Why this round matters</div>
+                                                    <p className="text-xs text-slate-600 leading-relaxed italic">{round.why}</p>
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                    <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between text-slate-400">
+                                        <div className="text-[10px] font-bold uppercase tracking-widest">Recruitment Flow Analysis</div>
+                                        <span className="text-[9px] italic">Mapped for {data.intel?.sizeValue || 'General'} size</span>
                                     </div>
                                 </Card>
                             </div>
