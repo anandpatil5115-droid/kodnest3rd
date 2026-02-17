@@ -2277,6 +2277,67 @@ Core Capabilities:
             saveResumeData(data);
         }
 
+        // Template management
+        function getTemplate() {
+            return localStorage.getItem('resumeTemplate') || 'classic';
+        }
+
+        function setTemplate(template) {
+            localStorage.setItem('resumeTemplate', template);
+            render();
+        }
+
+        // Bullet guidance helpers
+        const ACTION_VERBS = ['built', 'developed', 'designed', 'implemented', 'led', 'improved', 'created', 'optimized', 'automated', 'managed', 'launched', 'reduced', 'increased', 'established', 'achieved', 'delivered', 'executed', 'streamlined', 'spearheaded', 'coordinated'];
+
+        function checkBulletGuidance(text) {
+            const guidance = [];
+            if (!text || text.trim().length === 0) return guidance;
+
+            const firstWord = text.trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, '');
+            if (!ACTION_VERBS.includes(firstWord)) {
+                guidance.push('Start with a strong action verb.');
+            }
+
+            if (!/\d+[%kKmM]?|\d+\+|[0-9]/.test(text)) {
+                guidance.push('Add measurable impact (numbers).');
+            }
+
+            return guidance;
+        }
+
+        function getTopImprovements(data) {
+            const improvements = [];
+
+            if (data.projects.length < 2) {
+                improvements.push('Add at least 2 projects to showcase your work');
+            }
+
+            const hasNumbers = [...data.experience, ...data.projects].some(item => {
+                const desc = item.description || '';
+                return /\d+[%kKmM]?|\d+\+|[0-9]/.test(desc);
+            });
+            if (!hasNumbers && (data.experience.length > 0 || data.projects.length > 0)) {
+                improvements.push('Add measurable impact with numbers and metrics');
+            }
+
+            const summaryWords = data.summary.trim().split(/\s+/).filter(w => w.length > 0).length;
+            if (summaryWords < 40) {
+                improvements.push('Expand your summary to 40-120 words');
+            }
+
+            const skillsArray = data.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            if (skillsArray.length < 8) {
+                improvements.push('Add more skills (target 8+ items)');
+            }
+
+            if (data.experience.length === 0) {
+                improvements.push('Add work experience or internships');
+            }
+
+            return improvements.slice(0, 3);
+        }
+
         function renderResumeHome() {
             return `
                 <div class="min-h-screen flex flex-col bg-white">
@@ -2326,6 +2387,20 @@ Core Capabilities:
                             </div>
                         </div>
                     </nav>
+
+                    <!-- Template Selector -->
+                    <div class="bg-white border-b border-slate-100 px-8 py-3">
+                        <div class="max-w-7xl mx-auto flex items-center gap-2">
+                            <span class="text-xs font-medium text-slate-500 mr-2">Template:</span>
+                            ${['classic', 'modern', 'minimal'].map(t => `
+                                <button 
+                                    onclick="setTemplate('${t}')" 
+                                    class="px-4 py-1.5 text-xs font-medium rounded-lg transition-colors ${getTemplate() === t ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                                    ${t.charAt(0).toUpperCase() + t.slice(1)}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
 
                     <main class="flex-1 max-w-7xl mx-auto w-full px-8 py-8">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
@@ -2449,6 +2524,14 @@ Core Capabilities:
                                                 <textarea placeholder="Description (include metrics!)" 
                                                     oninput="updateExperience(${i}, 'description', this.value)"
                                                     class="w-full h-24 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none text-sm">${exp.description || ''}</textarea>
+                                                ${(() => {
+                    const guidance = checkBulletGuidance(exp.description || '');
+                    return guidance.length > 0 ? `
+                                                        <div class="text-xs text-amber-600 space-y-1">
+                                                            ${guidance.map(g => `<div>💡 ${g}</div>`).join('')}
+                                                        </div>
+                                                    ` : '';
+                })()}
                                             </div>
                                         </div>
                                     `).join('')}
@@ -2479,6 +2562,14 @@ Core Capabilities:
                                                 <textarea placeholder="Description (include impact!)" 
                                                     oninput="updateProject(${i}, 'description', this.value)"
                                                     class="w-full h-24 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none text-sm">${proj.description || ''}</textarea>
+                                                ${(() => {
+                        const guidance = checkBulletGuidance(proj.description || '');
+                        return guidance.length > 0 ? `
+                                                        <div class="text-xs text-amber-600 space-y-1">
+                                                            ${guidance.map(g => `<div>💡 ${g}</div>`).join('')}
+                                                        </div>
+                                                    ` : '';
+                    })()}
                                             </div>
                                         </div>
                                     `).join('')}
@@ -2531,6 +2622,24 @@ Core Capabilities:
                                                     <p class="text-xs text-emerald-600 font-medium">✓ Perfect score! Your resume is ATS-ready.</p>
                                                 </div>
                                             `}
+                                            
+                                            <!-- Improvement Panel -->
+                                            ${(() => {
+                            const improvements = getTopImprovements(data);
+                            return improvements.length > 0 ? `
+                                                    <div class="mt-4 pt-4 border-t border-slate-100">
+                                                        <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Top 3 Improvements</h4>
+                                                        <ul class="space-y-2">
+                                                            ${improvements.map((imp, idx) => `
+                                                                <li class="text-xs text-slate-600 flex items-start gap-2">
+                                                                    <span class="text-primary font-bold">${idx + 1}.</span>
+                                                                    <span>${imp}</span>
+                                                                </li>
+                                                            `).join('')}
+                                                        </ul>
+                                                    </div>
+                                                ` : '';
+                        })()}
                                         `;
                 })()}
                                 </div>
@@ -2618,6 +2727,34 @@ Core Capabilities:
 
         function renderResumePreview() {
             const data = getResumeData();
+            const template = getTemplate();
+
+            // Template-specific styles
+            const templateStyles = {
+                classic: {
+                    container: 'font-serif',
+                    header: 'text-center mb-8 pb-6 border-b-2 border-black',
+                    name: 'text-4xl font-serif font-bold text-black mb-3',
+                    sectionTitle: 'text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1',
+                    text: 'text-sm text-black'
+                },
+                modern: {
+                    container: 'font-sans',
+                    header: 'mb-6 pb-4 border-l-4 border-primary pl-4',
+                    name: 'text-3xl font-bold text-black mb-2',
+                    sectionTitle: 'text-sm font-bold uppercase tracking-wide text-primary mb-2 flex items-center gap-2 before:content-["▪"] before:text-primary',
+                    text: 'text-sm text-black leading-relaxed'
+                },
+                minimal: {
+                    container: 'font-sans',
+                    header: 'text-left mb-12',
+                    name: 'text-5xl font-light text-black mb-4 tracking-tight',
+                    sectionTitle: 'text-xs font-medium uppercase tracking-widest text-slate-400 mb-4',
+                    text: 'text-sm text-slate-700 leading-loose'
+                }
+            };
+
+            const styles = templateStyles[template];
 
             return `
                 <div class="min-h-screen flex flex-col bg-slate-50">
@@ -2635,11 +2772,25 @@ Core Capabilities:
                         </div>
                     </nav>
 
+                    <!-- Template Selector -->
+                    <div class="bg-white border-b border-slate-100 px-8 py-3">
+                        <div class="max-w-7xl mx-auto flex items-center gap-2">
+                            <span class="text-xs font-medium text-slate-500 mr-2">Template:</span>
+                            ${['classic', 'modern', 'minimal'].map(t => `
+                                <button 
+                                    onclick="setTemplate('${t}')" 
+                                    class="px-4 py-1.5 text-xs font-medium rounded-lg transition-colors ${getTemplate() === t ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                                    ${t.charAt(0).toUpperCase() + t.slice(1)}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
                     <main class="flex-1 px-8 py-12">
-                        <div class="max-w-4xl mx-auto bg-white shadow-lg" style="aspect-ratio: 8.5/11; padding: 3rem;">
+                        <div class="max-w-4xl mx-auto bg-white shadow-lg ${styles.container}" style="aspect-ratio: 8.5/11; padding: 3rem;">
                             <!-- Header -->
-                            <div class="text-center mb-8 pb-6 border-b-2 border-black">
-                                <h1 class="text-4xl font-serif font-bold text-black mb-3">${data.personal.name || 'YOUR NAME'}</h1>
+                            <div class="${styles.header}">
+                                <h1 class="${styles.name}">${data.personal.name || 'YOUR NAME'}</h1>
                                 <div class="text-sm text-black space-x-4">
                                     <span>${data.personal.email || 'email@example.com'}</span>
                                     ${data.personal.phone ? `<span>|</span><span>${data.personal.phone}</span>` : ''}
@@ -2656,23 +2807,23 @@ Core Capabilities:
                             <!-- Summary -->
                             ${data.summary ? `
                                 <div class="mb-8">
-                                    <h2 class="text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1">Professional Summary</h2>
-                                    <p class="text-sm text-black leading-relaxed">${data.summary}</p>
+                                    <h2 class="${styles.sectionTitle}">Professional Summary</h2>
+                                    <p class="${styles.text} leading-relaxed">${data.summary}</p>
                                 </div>
                             ` : ''}
 
                             <!-- Skills -->
                             ${data.skills ? `
                                 <div class="mb-8">
-                                    <h2 class="text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1">Skills</h2>
-                                    <p class="text-sm text-black">${data.skills}</p>
+                                    <h2 class="${styles.sectionTitle}">Skills</h2>
+                                    <p class="${styles.text}">${data.skills}</p>
                                 </div>
                             ` : ''}
 
                             <!-- Education -->
                             ${data.education.length > 0 ? `
                                 <div class="mb-8">
-                                    <h2 class="text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1">Education</h2>
+                                    <h2 class="${styles.sectionTitle}">Education</h2>
                                     ${data.education.map(edu => `
                                         <div class="mb-4">
                                             <div class="font-bold text-sm text-black">${edu.degree || 'Degree'}</div>
@@ -2686,7 +2837,7 @@ Core Capabilities:
                             <!-- Experience -->
                             ${data.experience.length > 0 ? `
                                 <div class="mb-8">
-                                    <h2 class="text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1">Experience</h2>
+                                    <h2 class="${styles.sectionTitle}">Experience</h2>
                                     ${data.experience.map(exp => `
                                         <div class="mb-4">
                                             <div class="font-bold text-sm text-black">${exp.title || 'Job Title'}</div>
@@ -2700,7 +2851,7 @@ Core Capabilities:
                             <!-- Projects -->
                             ${data.projects.length > 0 ? `
                                 <div class="mb-8">
-                                    <h2 class="text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1">Projects</h2>
+                                    <h2 class="${styles.sectionTitle}">Projects</h2>
                                     ${data.projects.map(proj => `
                                         <div class="mb-4">
                                             <div class="font-bold text-sm text-black">${proj.name || 'Project Name'}</div>
