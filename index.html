@@ -2150,16 +2150,43 @@ Core Capabilities:
 
         function getResumeData() {
             const saved = localStorage.getItem('resumeBuilderData');
-            if (saved) return JSON.parse(saved);
-            return {
+            let data = saved ? JSON.parse(saved) : {
                 personal: { name: '', email: '', phone: '', location: '' },
                 summary: '',
                 education: [],
                 experience: [],
                 projects: [],
-                skills: '',
+                skills: { technical: [], soft: [], tools: [] },
                 links: { github: '', linkedin: '' }
             };
+
+            // Backward Compatibility: Convert string skills to object
+            if (typeof data.skills === 'string') {
+                const oldSkills = data.skills.split(',').map(s => s.trim()).filter(s => s);
+                data.skills = {
+                    technical: oldSkills,
+                    soft: [],
+                    tools: []
+                };
+            }
+
+            // Backward Compatibility: Update generic skills structure if missing categories
+            if (data.skills && !data.skills.technical) {
+                data.skills = { technical: [], soft: [], tools: [] };
+            }
+
+            // Backward Compatibility: Convert projects tech string to array
+            if (data.projects) {
+                data.projects = data.projects.map(p => ({
+                    ...p,
+                    tech: Array.isArray(p.tech) ? p.tech : (p.tech ? p.tech.split(',').map(s => s.trim()).filter(s => s) : []),
+                    liveUrl: p.liveUrl || '',
+                    githubUrl: p.githubUrl || '',
+                    isCollapsed: p.isCollapsed !== undefined ? p.isCollapsed : true
+                }));
+            }
+
+            return data;
         }
 
         function saveResumeData(data) {
@@ -2193,12 +2220,14 @@ Core Capabilities:
                 suggestions.push('Add at least 1 work experience entry.');
             }
 
-            // +10 if skills list has ≥8 items
-            const skillsArray = data.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            if (skillsArray.length >= 8) {
+            // +10 if skills list has ≥8 items total
+            const totalSkillsCount = (data.skills.technical?.length || 0) +
+                (data.skills.soft?.length || 0) +
+                (data.skills.tools?.length || 0);
+            if (totalSkillsCount >= 8) {
                 score += 10;
             } else {
-                suggestions.push('Add more skills (target 8+).');
+                suggestions.push('Add more skills (target 8+ total).');
             }
 
             // +10 if GitHub or LinkedIn link exists
@@ -2269,22 +2298,97 @@ Core Capabilities:
                 projects: [
                     {
                         name: 'AI Chat Platform',
-                        tech: 'React, Node.js, OpenAI API',
-                        description: 'Built real-time chat application with AI-powered responses. 10k+ active users, 95% uptime.'
+                        tech: ['React', 'Node.js', 'OpenAI API'],
+                        description: 'Built real-time chat application with AI-powered responses. 10k+ active users, 95% uptime.',
+                        liveUrl: 'https://chat-ai.example.com',
+                        githubUrl: 'https://github.com/alexjohnson/ai-chat',
+                        isCollapsed: true
                     },
                     {
                         name: 'E-commerce Analytics',
-                        tech: 'Python, PostgreSQL, AWS',
-                        description: 'Created analytics dashboard processing 500k+ transactions daily. Improved reporting speed by 3x.'
+                        tech: ['Python', 'PostgreSQL', 'AWS'],
+                        description: 'Created analytics dashboard processing 500k+ transactions daily. Improved reporting speed by 3x.',
+                        liveUrl: '',
+                        githubUrl: 'https://github.com/alexjohnson/ecommerce-stats',
+                        isCollapsed: true
                     }
                 ],
-                skills: 'JavaScript, React, Node.js, Python, SQL, AWS, Docker, Git, TypeScript, MongoDB',
+                skills: {
+                    technical: ['JavaScript', 'React', 'Node.js', 'Python', 'TypeScript', 'SQL', 'MongoDB'],
+                    soft: ['Problem Solving', 'Teamwork'],
+                    tools: ['AWS', 'Docker', 'Git']
+                },
                 links: {
                     github: 'github.com/alexjohnson',
                     linkedin: 'linkedin.com/in/alexjohnson'
                 }
             };
             saveResumeData(sample);
+        }
+
+        // Helper functions for Skills & Projects interaction
+        let isSuggestingSkills = false;
+        function suggestSkills() {
+            if (isSuggestingSkills) return;
+            isSuggestingSkills = true;
+            render(); // Show loading state
+
+            setTimeout(() => {
+                const data = getResumeData();
+                const suggestions = {
+                    technical: ["TypeScript", "React", "Node.js", "PostgreSQL", "GraphQL"],
+                    soft: ["Team Leadership", "Problem Solving"],
+                    tools: ["Git", "Docker", "AWS"]
+                };
+
+                // Add unique suggestions
+                Object.keys(suggestions).forEach(cat => {
+                    suggestions[cat].forEach(skill => {
+                        if (!data.skills[cat].includes(skill)) {
+                            data.skills[cat].push(skill);
+                        }
+                    });
+                });
+
+                isSuggestingSkills = false;
+                saveResumeData(data);
+            }, 1000);
+        }
+
+        function addSkill(category, skill) {
+            if (!skill.trim()) return;
+            const data = getResumeData();
+            if (!data.skills[category].includes(skill.trim())) {
+                data.skills[category].push(skill.trim());
+                saveResumeData(data);
+            }
+        }
+
+        function removeSkill(category, index) {
+            const data = getResumeData();
+            data.skills[category].splice(index, 1);
+            saveResumeData(data);
+        }
+
+        function addProjectTech(projectIndex, tech) {
+            if (!tech.trim()) return;
+            const data = getResumeData();
+            if (!data.projects[projectIndex].tech.includes(tech.trim())) {
+                data.projects[projectIndex].tech.push(tech.trim());
+                saveResumeData(data);
+            }
+        }
+
+        function removeProjectTech(projectIndex, techIndex) {
+            const data = getResumeData();
+            data.projects[projectIndex].tech.splice(techIndex, 1);
+            saveResumeData(data);
+        }
+
+        function toggleProjectAccordion(index) {
+            const data = getResumeData();
+            data.projects[index].isCollapsed = !data.projects[index].isCollapsed;
+            saveResumeData(data);
         }
 
         // Helper functions for managing sections
@@ -2442,12 +2546,21 @@ Core Capabilities:
             if (data.projects.length > 0) {
                 text += `\nPROJECTS\n`;
                 data.projects.forEach(proj => {
-                    text += `${proj.name} | ${proj.tech}\n`;
+                    text += `${proj.name} | ${proj.tech.join(', ')}\n`;
+                    if (proj.liveUrl) text += `Live: ${proj.liveUrl}\n`;
+                    if (proj.githubUrl) text += `Code: ${proj.githubUrl}\n`;
                     text += `${proj.description}\n\n`;
                 });
             }
 
-            text += `\nSKILLS\n${data.skills}\n`;
+            if (Object.values(data.skills).some(cat => cat.length > 0)) {
+                text += `\nSKILLS\n`;
+                Object.entries(data.skills).forEach(([cat, skills]) => {
+                    if (skills.length > 0) {
+                        text += `${cat.toUpperCase()}: ${skills.join(', ')}\n`;
+                    }
+                });
+            }
 
             navigator.clipboard.writeText(text).then(() => {
                 alert('Resume copied to clipboard as plain text!');
@@ -2560,11 +2673,42 @@ Core Capabilities:
 
                                 <!-- Skills -->
                                 <div class="bg-white rounded-xl border border-slate-200 p-6">
-                                    <h3 class="font-bold text-slate-900 mb-4">Skills</h3>
-                                    <input type="text" placeholder="JavaScript, React, Node.js, Python..." value="${data.skills}"
-                                        oninput="const d = getResumeData(); d.skills = this.value; saveResumeData(d);"
-                                        class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
-                                    <p class="text-xs text-slate-500 mt-2">Separate skills with commas</p>
+                                    <div class="flex justify-between items-center mb-6">
+                                        <h3 class="font-bold text-slate-900">Skills</h3>
+                                        <button onclick="suggestSkills()" 
+                                            class="px-4 py-2 text-sm bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors flex items-center gap-2 ${isSuggestingSkills ? 'opacity-50 cursor-not-allowed' : ''}">
+                                            ${isSuggestingSkills ? Icon('loader', 'animate-spin w-4 h-4') : '✨'}
+                                            ${isSuggestingSkills ? 'Suggesting...' : 'Suggest Skills'}
+                                        </button>
+                                    </div>
+
+                                    <div class="space-y-6">
+                                        ${[
+                    { key: 'technical', label: 'Technical Skills' },
+                    { key: 'soft', label: 'Soft Skills' },
+                    { key: 'tools', label: 'Tools & Technologies' }
+                ].map(cat => `
+                                            <div class="space-y-3">
+                                                <div class="flex justify-between items-center">
+                                                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">${cat.label} (${data.skills[cat.key].length})</label>
+                                                </div>
+                                                <div class="flex flex-wrap gap-2 p-3 border border-slate-200 rounded-lg focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent min-h-[46px] bg-slate-50/30">
+                                                    ${data.skills[cat.key].map((skill, idx) => `
+                                                        <span class="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 text-slate-700 rounded-md text-xs font-medium shadow-sm">
+                                                            ${skill}
+                                                            <button onclick="removeSkill('${cat.key}', ${idx})" class="text-slate-400 hover:text-red-500 transition-colors">
+                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                            </button>
+                                                        </span>
+                                                    `).join('')}
+                                                    <input type="text" 
+                                                        placeholder="Type and press Enter..." 
+                                                        class="flex-1 bg-transparent border-none focus:ring-0 text-sm p-0 min-w-[120px]"
+                                                        onkeydown="if(event.key === 'Enter') { addSkill('${cat.key}', this.value); this.value = ''; }">
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
                                 </div>
 
                                 <!-- Links -->
@@ -2643,45 +2787,7 @@ Core Capabilities:
                                                     oninput="updateExperience(${i}, 'description', this.value)"
                                                     class="w-full h-24 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none text-sm">${exp.description || ''}</textarea>
                                                 ${(() => {
-                    const guidance = checkBulletGuidance(exp.description || '');
-                    return guidance.length > 0 ? `
-                                                        <div class="text-xs text-amber-600 space-y-1">
-                                                            ${guidance.map(g => `<div>💡 ${g}</div>`).join('')}
-                                                        </div>
-                                                    ` : '';
-                })()}
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                    ${data.experience.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">No experience entries yet</p>' : ''}
-                                </div>
-
-                                <!-- Projects -->
-                                <div class="bg-white rounded-xl border border-slate-200 p-6">
-                                    <div class="flex justify-between items-center mb-4">
-                                        <h3 class="font-bold text-slate-900">Projects</h3>
-                                        <button onclick="addProject()" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark">
-                                            + Add
-                                        </button>
-                                    </div>
-                                    ${data.projects.map((proj, i) => `
-                                        <div class="mb-4 pb-4 border-b border-slate-100 last:border-0">
-                                            <div class="flex justify-between items-start mb-3">
-                                                <span class="text-xs font-bold text-slate-400">Entry ${i + 1}</span>
-                                                <button onclick="removeProject(${i})" class="text-xs text-red-500 hover:text-red-700">Remove</button>
-                                            </div>
-                                            <div class="space-y-3">
-                                                <input type="text" placeholder="Project Name" value="${proj.name || ''}"
-                                                    oninput="updateProject(${i}, 'name', this.value)"
-                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
-                                                <input type="text" placeholder="Technologies Used" value="${proj.tech || ''}"
-                                                    oninput="updateProject(${i}, 'tech', this.value)"
-                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
-                                                <textarea placeholder="Description (include impact!)" 
-                                                    oninput="updateProject(${i}, 'description', this.value)"
-                                                    class="w-full h-24 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none text-sm">${proj.description || ''}</textarea>
-                                                ${(() => {
-                        const guidance = checkBulletGuidance(proj.description || '');
+                        const guidance = checkBulletGuidance(exp.description || '');
                         return guidance.length > 0 ? `
                                                         <div class="text-xs text-amber-600 space-y-1">
                                                             ${guidance.map(g => `<div>💡 ${g}</div>`).join('')}
@@ -2691,7 +2797,99 @@ Core Capabilities:
                                             </div>
                                         </div>
                                     `).join('')}
-                                    ${data.projects.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">No projects yet</p>' : ''}
+                                    ${data.experience.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">No experience entries yet</p>' : ''}
+                                </div>
+
+                                <!-- Projects -->
+                                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                                    <div class="flex justify-between items-center mb-6">
+                                        <h3 class="font-bold text-slate-900">Projects</h3>
+                                        <button onclick="addProject()" class="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark shadow-sm transition-all flex items-center gap-2">
+                                            ${Icon('plus')} Add Project
+                                        </button>
+                                    </div>
+
+                                    <div class="space-y-4">
+                                        ${data.projects.map((proj, i) => `
+                                            <div class="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm transition-all hover:border-slate-300">
+                                                <div class="flex items-center justify-between p-4 cursor-pointer bg-slate-50/50 hover:bg-slate-50 transition-colors" onclick="toggleProjectAccordion(${i})">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                                                            ${Icon('briefcase', 'w-4 h-4')}
+                                                        </div>
+                                                        <div>
+                                                            <h4 class="font-bold text-slate-900">${proj.name || 'Untitled Project'}</h4>
+                                                            <p class="text-xs text-slate-500">${proj.tech.length} Technologies</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-center gap-3">
+                                                        <button onclick="event.stopPropagation(); removeProject(${i})" class="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                                                            ${Icon('trash', 'w-4 h-4')}
+                                                        </button>
+                                                        <div class="p-1 transition-transform ${!proj.isCollapsed ? 'rotate-180' : ''}">
+                                                            ${Icon('chevron-down', 'w-5 h-5')}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="${proj.isCollapsed ? 'hidden' : 'block'} p-6 border-t border-slate-100 space-y-5">
+                                                    <div class="space-y-4">
+                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div class="space-y-1.5">
+                                                                <label class="text-xs font-bold text-slate-500 uppercase">Project Title</label>
+                                                                <input type="text" placeholder="e.g. AI Portfolio Platform" value="${proj.name || ''}"
+                                                                    oninput="updateProject(${i}, 'name', this.value)"
+                                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                            </div>
+                                                            <div class="space-y-1.5">
+                                                                <label class="text-xs font-bold text-slate-500 uppercase">Tech Stack (Tag Input)</label>
+                                                                <div class="flex flex-wrap gap-2 p-2 border border-slate-200 rounded-lg min-h-[42px] bg-slate-50/30">
+                                                                    ${proj.tech.map((t, tidx) => `
+                                                                        <span class="flex items-center gap-1.5 px-2 py-0.5 bg-white border border-slate-200 text-slate-700 rounded text-xs font-medium">
+                                                                            ${t}
+                                                                            <button onclick="removeProjectTech(${i}, ${tidx})" class="text-slate-400 hover:text-red-500">
+                                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                                            </button>
+                                                                        </span>
+                                                                    `).join('')}
+                                                                    <input type="text" placeholder="Add tech..." 
+                                                                        class="flex-1 bg-transparent border-none focus:ring-0 text-sm p-0 min-w-[80px]"
+                                                                        onkeydown="if(event.key === 'Enter') { addProjectTech(${i}, this.value); this.value = ''; }">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="space-y-1.5">
+                                                            <div class="flex justify-between items-center">
+                                                                <label class="text-xs font-bold text-slate-500 uppercase">Description</label>
+                                                                <span class="text-[10px] font-medium ${(proj.description || '').length > 200 ? 'text-red-500' : 'text-slate-400'}">${(proj.description || '').length}/200</span>
+                                                            </div>
+                                                            <textarea placeholder="Describe the impact, features, and your role..." 
+                                                                maxlength="200"
+                                                                oninput="updateProject(${i}, 'description', this.value)"
+                                                                class="w-full h-24 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none text-sm">${proj.description || ''}</textarea>
+                                                        </div>
+
+                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div class="space-y-1.5">
+                                                                <label class="text-xs font-bold text-slate-500 uppercase">Live URL (Optional)</label>
+                                                                <input type="text" placeholder="https://..." value="${proj.liveUrl || ''}"
+                                                                    oninput="updateProject(${i}, 'liveUrl', this.value)"
+                                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                            </div>
+                                                            <div class="space-y-1.5">
+                                                                <label class="text-xs font-bold text-slate-500 uppercase">GitHub URL (Optional)</label>
+                                                                <input type="text" placeholder="https://..." value="${proj.githubUrl || ''}"
+                                                                    oninput="updateProject(${i}, 'githubUrl', this.value)"
+                                                                    class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-sm">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                        ${data.projects.length === 0 ? '<p class="text-sm text-slate-400 text-center py-10 bg-slate-50 rounded-xl border-2 border-dashed border-slate-100">Click "+" to add your first project entry.</p>' : ''}
+                                    </div>
                                 </div>
                             </div>
 
@@ -2817,18 +3015,37 @@ Core Capabilities:
                                             <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Projects</h2>
                                             ${data.projects.map(proj => `
                                                 <div class="mb-4">
-                                                    <div class="font-semibold text-sm text-slate-900">${proj.name || 'Project Name'}</div>
-                                                    ${proj.tech ? `<div class="text-xs text-slate-500 mb-1">${proj.tech}</div>` : ''}
-                                                    ${proj.description ? `<p class="text-sm text-slate-700">${proj.description}</p>` : ''}
+                                                    <div class="flex justify-between items-start mb-1">
+                                                        <div class="font-semibold text-sm text-slate-900">${proj.name || 'Untitled Project'}</div>
+                                                        <div class="flex gap-2">
+                                                            ${proj.liveUrl ? `<a href="${proj.liveUrl}" target="_blank" class="text-slate-400 hover:text-primary">${Icon('external-link', 'w-3 h-3')}</a>` : ''}
+                                                            ${proj.githubUrl ? `<a href="${proj.githubUrl}" target="_blank" class="text-slate-400 hover:text-primary">${Icon('github', 'w-3 h-3')}</a>` : ''}
+                                                        </div>
+                                                    </div>
+                                                    ${proj.tech.length > 0 ? `
+                                                        <div class="flex flex-wrap gap-1 mb-2">
+                                                            ${proj.tech.map(t => `<span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-medium">${t}</span>`).join('')}
+                                                        </div>
+                                                    ` : ''}
+                                                    ${proj.description ? `<p class="text-sm text-slate-700 leading-relaxed">${proj.description}</p>` : ''}
                                                 </div>
                                             `).join('')}
                                         </div>
                                     ` : ''}
 
-                                    ${data.skills ? `
+                                    ${Object.values(data.skills).some(cat => cat.length > 0) ? `
                                         <div class="mb-6">
                                             <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Skills</h2>
-                                            <p class="text-sm text-slate-700">${data.skills}</p>
+                                            <div class="space-y-3">
+                                                ${Object.entries(data.skills).map(([cat, skills]) => skills.length > 0 ? `
+                                                    <div>
+                                                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">${cat}</div>
+                                                        <div class="flex flex-wrap gap-1.5">
+                                                            ${skills.map(s => `<span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-md text-xs font-medium">${s}</span>`).join('')}
+                                                        </div>
+                                                    </div>
+                                                ` : '').join('')}
+                                            </div>
                                         </div>
                                     ` : ''}
 
@@ -2955,10 +3172,17 @@ Core Capabilities:
                             ` : ''}
 
                             <!-- Skills -->
-                            ${data.skills ? `
+                            ${Object.values(data.skills).some(cat => cat.length > 0) ? `
                                 <div class="mb-8">
                                     <h2 class="${styles.sectionTitle}">Skills</h2>
-                                    <p class="${styles.text}">${data.skills}</p>
+                                    <div class="space-y-4">
+                                        ${Object.entries(data.skills).map(([cat, skills]) => skills.length > 0 ? `
+                                            <div>
+                                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">${cat}</div>
+                                                <p class="${styles.text}">${skills.join(', ')}</p>
+                                            </div>
+                                        ` : '').join('')}
+                                    </div>
                                 </div>
                             ` : ''}
 
@@ -2995,9 +3219,15 @@ Core Capabilities:
                                 <div class="mb-8">
                                     <h2 class="${styles.sectionTitle}">Projects</h2>
                                     ${data.projects.map(proj => `
-                                        <div class="mb-4">
-                                            <div class="font-bold text-sm text-black">${proj.name || 'Project Name'}</div>
-                                            ${proj.tech ? `<div class="text-xs text-black italic mb-1">${proj.tech}</div>` : ''}
+                                        <div class="mb-5 last:mb-0">
+                                            <div class="flex justify-between items-baseline mb-1">
+                                                <div class="font-bold text-sm text-black">${proj.name || 'Untitled Project'}</div>
+                                                <div class="text-[10px] text-slate-400 flex gap-2 no-print">
+                                                    ${proj.liveUrl ? `<a href="${proj.liveUrl}" class="hover:text-primary">Live</a>` : ''}
+                                                    ${proj.githubUrl ? `<a href="${proj.githubUrl}" class="hover:text-primary">GitHub</a>` : ''}
+                                                </div>
+                                            </div>
+                                            ${proj.tech.length > 0 ? `<div class="text-xs text-black italic mb-1.5">${proj.tech.join(', ')}</div>` : ''}
                                             ${proj.description ? `<p class="text-sm text-black leading-relaxed">${proj.description}</p>` : ''}
                                         </div>
                                     `).join('')}
