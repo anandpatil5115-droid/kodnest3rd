@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Placement Prep | Ace Your Placement</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -189,18 +192,139 @@
                         </header>
 
                         <main class="flex-1 overflow-y-auto p-8">
-                            <div class="max-w-4xl">
-                                <h2 class="text-2xl font-bold text-slate-900 mb-2">${current.title}</h2>
-                                <p class="text-slate-500 mb-8 font-medium">${current.desc}</p>
-                                <div class="bg-white rounded-xl border border-slate-200 shadow-sm h-64 flex flex-col items-center justify-center text-slate-300 gap-4">
-                                    ${Icon('construction', 48)}
-                                    <span class="italic font-medium">This module is currently under development.</span>
-                                </div>
-                            </div>
+                            ${renderDashboardContent()}
                         </main>
                     </div>
                 </div>
             `;
+        }
+
+        // Dashboard Content
+        function renderDashboardContent() {
+            if (currentRoute === '/dashboard') {
+                return `
+                    <div class="max-w-7xl mx-auto">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-8">Dashboard</h2>
+                        
+                        <!-- Grid Layout -->
+                        <div class="grid md:grid-cols-2 gap-6">
+                            
+                            <!-- Overall Readiness -->
+                            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                                <h3 class="text-lg font-bold text-slate-900 mb-6">Overall Readiness</h3>
+                                <div class="flex flex-col items-center justify-center py-8">
+                                    <div class="relative w-48 h-48">
+                                        <svg class="w-full h-full transform -rotate-90">
+                                            <circle cx="96" cy="96" r="88" stroke="#e0e7ff" stroke-width="12" fill="none"/>
+                                            <circle cx="96" cy="96" r="88" stroke="hsl(245, 58%, 51%)" stroke-width="12" fill="none"
+                                                stroke-dasharray="553" stroke-dashoffset="154" stroke-linecap="round"
+                                                class="transition-all duration-1000"/>
+                                        </svg>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span class="text-5xl font-bold text-primary">72</span>
+                                            <span class="text-slate-400 text-sm">/100</span>
+                                        </div>
+                                    </div>
+                                    <p class="mt-4 text-slate-600 font-medium">Readiness Score</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Skill Breakdown -->
+                            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                                <h3 class="text-lg font-bold text-slate-900 mb-6">Skill Breakdown</h3>
+                                <div id="radar-chart" class="flex items-center justify-center h-64"></div>
+                            </div>
+                            
+                            <!-- Continue Practice -->
+                            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                                <h3 class="text-lg font-bold text-slate-900 mb-4">Continue Practice</h3>
+                                <div class="flex items-start gap-4 mb-4">
+                                    <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0">
+                                        ${Icon('code-2', 24)}
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-slate-900 mb-1">Dynamic Programming</h4>
+                                        <p class="text-sm text-slate-500 mb-3">3 of 10 problems completed</p>
+                                        <div class="w-full bg-slate-100 rounded-full h-2 mb-4">
+                                            <div class="bg-primary h-2 rounded-full transition-all" style="width: 30%"></div>
+                                        </div>
+                                        <button onclick="navigate('/dashboard/practice')" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors">
+                                            Continue
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Weekly Goals -->
+                            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                                <h3 class="text-lg font-bold text-slate-900 mb-4">Weekly Goals</h3>
+                                <div class="mb-6">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium text-slate-700">Problems Solved</span>
+                                        <span class="text-sm font-bold text-primary">12/20</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 rounded-full h-2">
+                                        <div class="bg-primary h-2 rounded-full transition-all" style="width: 60%"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between gap-2">
+                                    ${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => `
+                                        <div class="flex flex-col items-center gap-1">
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-medium ${i < 4 ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}">
+                                                ${day}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <!-- Upcoming Assessments -->
+                            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 md:col-span-2">
+                                <h3 class="text-lg font-bold text-slate-900 mb-4">Upcoming Assessments</h3>
+                                <div class="space-y-3">
+                                    ${[
+                        { title: 'DSA Mock Test', time: 'Tomorrow, 10:00 AM', icon: 'clipboard-check', color: 'bg-blue-100 text-blue-600' },
+                        { title: 'System Design Review', time: 'Wed, 2:00 PM', icon: 'layout', color: 'bg-purple-100 text-purple-600' },
+                        { title: 'HR Interview Prep', time: 'Friday, 11:00 AM', icon: 'user', color: 'bg-green-100 text-green-600' }
+                    ].map(assessment => `
+                                        <div class="flex items-center gap-4 p-4 border border-slate-200 rounded-lg hover:border-primary transition-colors">
+                                            <div class="w-10 h-10 ${assessment.color} rounded-lg flex items-center justify-center shrink-0">
+                                                ${Icon(assessment.icon, 20)}
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-slate-900">${assessment.title}</h4>
+                                                <p class="text-sm text-slate-500">${assessment.time}</p>
+                                            </div>
+                                            <button class="text-primary hover:text-primary-dark font-medium text-sm">
+                                                View Details
+                                            </button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                `;
+            } else {
+                const routes = {
+                    '/dashboard/practice': { title: 'Practice', desc: 'Solve coding problems and improve your skills.' },
+                    '/dashboard/assessments': { title: 'Assessments', desc: 'Take mock tests and evaluate your readiness.' },
+                    '/dashboard/resources': { title: 'Resources', desc: 'Access study materials and preparation guides.' },
+                    '/dashboard/profile': { title: 'Profile', desc: 'Manage your account and track your progress.' }
+                };
+                const current = routes[currentRoute] || { title: 'Page', desc: 'Content coming soon.' };
+                return `
+                    <div class="max-w-4xl">
+                        <h2 class="text-2xl font-bold text-slate-900 mb-2">${current.title}</h2>
+                        <p class="text-slate-500 mb-8 font-medium">${current.desc}</p>
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm h-64 flex flex-col items-center justify-center text-slate-300 gap-4">
+                            ${Icon('construction', 48)}
+                            <span class="italic font-medium">This module is currently under development.</span>
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         function navLink(path, icon, label) {
@@ -226,7 +350,44 @@
                 app.innerHTML = renderLanding();
             } else {
                 app.innerHTML = renderDashboard();
+
+                // Initialize radar chart if on dashboard
+                if (currentRoute === '/dashboard') {
+                    setTimeout(() => initRadarChart(), 100);
+                }
             }
+        }
+
+        function initRadarChart() {
+            const container = document.getElementById('radar-chart');
+            if (!container || !window.Recharts) return;
+
+            const data = [
+                { subject: 'DSA', score: 75, fullMark: 100 },
+                { subject: 'System Design', score: 60, fullMark: 100 },
+                { subject: 'Communication', score: 80, fullMark: 100 },
+                { subject: 'Resume', score: 85, fullMark: 100 },
+                { subject: 'Aptitude', score: 70, fullMark: 100 }
+            ];
+
+            const { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } = window.Recharts;
+
+            const chart = React.createElement(ResponsiveContainer, { width: '100%', height: 250 },
+                React.createElement(RadarChart, { data: data },
+                    React.createElement(PolarGrid, { stroke: '#e2e8f0' }),
+                    React.createElement(PolarAngleAxis, { dataKey: 'subject', tick: { fill: '#64748b', fontSize: 12 } }),
+                    React.createElement(PolarRadiusAxis, { angle: 90, domain: [0, 100], tick: { fill: '#94a3b8', fontSize: 10 } }),
+                    React.createElement(Radar, {
+                        name: 'Skills',
+                        dataKey: 'score',
+                        stroke: 'hsl(245, 58%, 51%)',
+                        fill: 'hsl(245, 58%, 51%)',
+                        fillOpacity: 0.3
+                    })
+                )
+            );
+
+            ReactDOM.render(chart, container);
         }
 
         window.addEventListener('hashchange', render);
