@@ -1785,6 +1785,14 @@ Core Capabilities:
                 content = renderTestChecklist();
             } else if (currentRoute === '/proof') {
                 content = renderProof();
+            } else if (currentRoute === '/resume') {
+                content = renderResumeHome();
+            } else if (currentRoute === '/resume/builder') {
+                content = renderResumeBuilder();
+            } else if (currentRoute === '/resume/preview') {
+                content = renderResumePreview();
+            } else if (currentRoute === '/resume/proof') {
+                content = renderResumeProof();
             } else {
                 content = renderLanding();
             }
@@ -2043,6 +2051,15 @@ Core Capabilities:
                                 <p class="text-2xl font-bold mb-1">AI Resume Builder</p>
                                 <p class="text-sm text-indigo-100 opacity-90">Step ${rbSteps.filter(s => isRbStepComplete(s.id)).length + 1} of 8 Pending</p>
                             </div>
+
+                            <div class="bg-gradient-to-br from-emerald-600 to-emerald-700 p-6 rounded-xl shadow-lg cursor-pointer text-white" onclick="navigate('/resume')">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-medium text-emerald-100">Resume App</h3>
+                                    <div class="opacity-80">${Icon('user')}</div>
+                                </div>
+                                <p class="text-2xl font-bold mb-1">Build Resume</p>
+                                <p class="text-sm text-emerald-100 opacity-90">Create ATS-optimized resume</p>
+                            </div>
                         </div>
 
                          <h3 class="font-bold text-slate-900 mb-4">Recent Analyses</h3>
@@ -2059,6 +2076,324 @@ Core Capabilities:
                                  </div>
                              `).join('') : '<div class="p-8 text-center text-slate-500">No analyses yet.</div>'}
                          </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        // --- PROJECT 4: AI RESUME BUILDER APP ---
+
+        function getResumeData() {
+            const saved = localStorage.getItem('resume_data');
+            if (saved) return JSON.parse(saved);
+            return {
+                personal: { name: '', email: '', phone: '', location: '' },
+                summary: '',
+                education: [],
+                experience: [],
+                projects: [],
+                skills: '',
+                links: { github: '', linkedin: '' }
+            };
+        }
+
+        function saveResumeData(data) {
+            localStorage.setItem('resume_data', JSON.stringify(data));
+            render();
+        }
+
+        function loadSampleData() {
+            const sample = {
+                personal: {
+                    name: 'Alex Johnson',
+                    email: 'alex.johnson@email.com',
+                    phone: '+1 (555) 123-4567',
+                    location: 'San Francisco, CA'
+                },
+                summary: 'Full-stack developer with 3+ years of experience building scalable web applications. Passionate about clean code, user experience, and solving complex problems.',
+                education: [
+                    {
+                        degree: 'B.S. Computer Science',
+                        school: 'Stanford University',
+                        year: '2020',
+                        gpa: '3.8/4.0'
+                    }
+                ],
+                experience: [
+                    {
+                        title: 'Software Engineer',
+                        company: 'Tech Corp',
+                        duration: '2021 - Present',
+                        description: 'Built microservices architecture serving 1M+ users. Reduced API latency by 40% through optimization.'
+                    },
+                    {
+                        title: 'Junior Developer',
+                        company: 'Startup Inc',
+                        duration: '2020 - 2021',
+                        description: 'Developed React components for customer dashboard. Implemented CI/CD pipeline.'
+                    }
+                ],
+                projects: [
+                    {
+                        name: 'AI Chat Platform',
+                        tech: 'React, Node.js, OpenAI API',
+                        description: 'Built real-time chat application with AI-powered responses. 10k+ active users.'
+                    }
+                ],
+                skills: 'JavaScript, React, Node.js, Python, SQL, AWS, Docker, Git',
+                links: {
+                    github: 'github.com/alexjohnson',
+                    linkedin: 'linkedin.com/in/alexjohnson'
+                }
+            };
+            saveResumeData(sample);
+        }
+
+        function renderResumeHome() {
+            return `
+                <div class="min-h-screen flex flex-col bg-white">
+                    <nav class="border-b border-slate-200 px-8 py-4">
+                        <div class="max-w-6xl mx-auto flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                ${Icon('layout')}
+                                <span class="font-bold text-lg">AI Resume Builder</span>
+                            </div>
+                            <button onclick="navigate('/')" class="text-sm text-slate-600 hover:text-primary">← Back to Platform</button>
+                        </div>
+                    </nav>
+
+                    <main class="flex-1 flex flex-col items-center justify-center px-4 py-20 bg-gradient-to-b from-slate-50 to-white">
+                        <div class="text-center max-w-3xl">
+                            <h1 class="text-6xl font-serif font-bold text-slate-900 mb-6">
+                                Build a Resume<br/>That Gets <span class="text-primary">Read</span>
+                            </h1>
+                            <p class="text-xl text-slate-600 mb-10 leading-relaxed">
+                                Create a professional, ATS-optimized resume in minutes.<br/>
+                                Clean design. Premium typography. Zero fluff.
+                            </p>
+                            <button onclick="navigate('/resume/builder')" class="px-10 py-4 bg-primary text-white rounded-lg text-lg font-bold hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl">
+                                Start Building
+                            </button>
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        function renderResumeBuilder() {
+            const data = getResumeData();
+
+            return `
+                <div class="min-h-screen flex flex-col bg-slate-50">
+                    <nav class="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-50">
+                        <div class="max-w-7xl mx-auto flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                ${Icon('layout')}
+                                <span class="font-bold text-lg">AI Resume Builder</span>
+                            </div>
+                            <div class="flex gap-6 text-sm font-medium">
+                                <a href="#/resume/builder" class="text-primary border-b-2 border-primary pb-1">Builder</a>
+                                <a href="#/resume/preview" class="text-slate-600 hover:text-primary transition-colors">Preview</a>
+                                <a href="#/resume/proof" class="text-slate-600 hover:text-primary transition-colors">Proof</a>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <main class="flex-1 max-w-7xl mx-auto w-full px-8 py-8">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                            <!-- Left: Form -->
+                            <div class="space-y-6 overflow-y-auto">
+                                <div class="flex justify-between items-center">
+                                    <h2 class="text-2xl font-bold text-slate-900">Build Your Resume</h2>
+                                    <button onclick="loadSampleData()" class="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-700">
+                                        Load Sample Data
+                                    </button>
+                                </div>
+
+                                <!-- Personal Info -->
+                                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                                    <h3 class="font-bold text-slate-900 mb-4">Personal Information</h3>
+                                    <div class="space-y-4">
+                                        <input type="text" placeholder="Full Name" value="${data.personal.name}" 
+                                            oninput="const d = getResumeData(); d.personal.name = this.value; saveResumeData(d);"
+                                            class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                        <input type="email" placeholder="Email" value="${data.personal.email}"
+                                            oninput="const d = getResumeData(); d.personal.email = this.value; saveResumeData(d);"
+                                            class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                        <input type="tel" placeholder="Phone" value="${data.personal.phone}"
+                                            oninput="const d = getResumeData(); d.personal.phone = this.value; saveResumeData(d);"
+                                            class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                        <input type="text" placeholder="Location" value="${data.personal.location}"
+                                            oninput="const d = getResumeData(); d.personal.location = this.value; saveResumeData(d);"
+                                            class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                    </div>
+                                </div>
+
+                                <!-- Summary -->
+                                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                                    <h3 class="font-bold text-slate-900 mb-4">Professional Summary</h3>
+                                    <textarea placeholder="Brief overview of your experience and skills..." 
+                                        oninput="const d = getResumeData(); d.summary = this.value; saveResumeData(d);"
+                                        class="w-full h-32 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none">${data.summary}</textarea>
+                                </div>
+
+                                <!-- Skills -->
+                                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                                    <h3 class="font-bold text-slate-900 mb-4">Skills</h3>
+                                    <input type="text" placeholder="JavaScript, React, Node.js, Python..." value="${data.skills}"
+                                        oninput="const d = getResumeData(); d.skills = this.value; saveResumeData(d);"
+                                        class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                    <p class="text-xs text-slate-500 mt-2">Separate skills with commas</p>
+                                </div>
+
+                                <!-- Links -->
+                                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                                    <h3 class="font-bold text-slate-900 mb-4">Links</h3>
+                                    <div class="space-y-4">
+                                        <input type="text" placeholder="GitHub URL" value="${data.links.github}"
+                                            oninput="const d = getResumeData(); d.links.github = this.value; saveResumeData(d);"
+                                            class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                        <input type="text" placeholder="LinkedIn URL" value="${data.links.linkedin}"
+                                            oninput="const d = getResumeData(); d.links.linkedin = this.value; saveResumeData(d);"
+                                            class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                    </div>
+                                </div>
+
+                                <div class="text-center text-sm text-slate-500 pb-8">
+                                    Education, Experience, and Projects sections coming soon...
+                                </div>
+                            </div>
+
+                            <!-- Right: Live Preview -->
+                            <div class="bg-white rounded-xl border border-slate-200 p-8 sticky top-24 h-fit shadow-sm">
+                                <div class="text-center mb-6 pb-6 border-b border-slate-200">
+                                    <h1 class="text-3xl font-serif font-bold text-slate-900 mb-2">${data.personal.name || 'Your Name'}</h1>
+                                    <div class="text-sm text-slate-600 space-x-3">
+                                        <span>${data.personal.email || 'email@example.com'}</span>
+                                        ${data.personal.phone ? `<span>•</span><span>${data.personal.phone}</span>` : ''}
+                                        ${data.personal.location ? `<span>•</span><span>${data.personal.location}</span>` : ''}
+                                    </div>
+                                    ${data.links.github || data.links.linkedin ? `
+                                        <div class="text-sm text-slate-600 mt-2 space-x-3">
+                                            ${data.links.github ? `<span>${data.links.github}</span>` : ''}
+                                            ${data.links.linkedin ? `<span>${data.links.linkedin}</span>` : ''}
+                                        </div>
+                                    ` : ''}
+                                </div>
+
+                                ${data.summary ? `
+                                    <div class="mb-6">
+                                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Summary</h2>
+                                        <p class="text-sm text-slate-700 leading-relaxed">${data.summary}</p>
+                                    </div>
+                                ` : ''}
+
+                                ${data.skills ? `
+                                    <div class="mb-6">
+                                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900 mb-3">Skills</h2>
+                                        <p class="text-sm text-slate-700">${data.skills}</p>
+                                    </div>
+                                ` : ''}
+
+                                <div class="text-center text-xs text-slate-400 mt-8 pt-8 border-t border-slate-100">
+                                    Live Preview • Updates automatically
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        function renderResumePreview() {
+            const data = getResumeData();
+
+            return `
+                <div class="min-h-screen flex flex-col bg-slate-50">
+                    <nav class="bg-white border-b border-slate-200 px-8 py-4">
+                        <div class="max-w-7xl mx-auto flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                ${Icon('layout')}
+                                <span class="font-bold text-lg">AI Resume Builder</span>
+                            </div>
+                            <div class="flex gap-6 text-sm font-medium">
+                                <a href="#/resume/builder" class="text-slate-600 hover:text-primary transition-colors">Builder</a>
+                                <a href="#/resume/preview" class="text-primary border-b-2 border-primary pb-1">Preview</a>
+                                <a href="#/resume/proof" class="text-slate-600 hover:text-primary transition-colors">Proof</a>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <main class="flex-1 px-8 py-12">
+                        <div class="max-w-4xl mx-auto bg-white shadow-lg" style="aspect-ratio: 8.5/11; padding: 3rem;">
+                            <!-- Header -->
+                            <div class="text-center mb-8 pb-6 border-b-2 border-black">
+                                <h1 class="text-4xl font-serif font-bold text-black mb-3">${data.personal.name || 'YOUR NAME'}</h1>
+                                <div class="text-sm text-black space-x-4">
+                                    <span>${data.personal.email || 'email@example.com'}</span>
+                                    ${data.personal.phone ? `<span>|</span><span>${data.personal.phone}</span>` : ''}
+                                    ${data.personal.location ? `<span>|</span><span>${data.personal.location}</span>` : ''}
+                                </div>
+                                ${data.links.github || data.links.linkedin ? `
+                                    <div class="text-sm text-black mt-2 space-x-4">
+                                        ${data.links.github ? `<span>${data.links.github}</span>` : ''}
+                                        ${data.links.linkedin ? `<span>|</span><span>${data.links.linkedin}</span>` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Summary -->
+                            ${data.summary ? `
+                                <div class="mb-8">
+                                    <h2 class="text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1">Professional Summary</h2>
+                                    <p class="text-sm text-black leading-relaxed">${data.summary}</p>
+                                </div>
+                            ` : ''}
+
+                            <!-- Skills -->
+                            ${data.skills ? `
+                                <div class="mb-8">
+                                    <h2 class="text-xs font-bold uppercase tracking-widest text-black mb-3 border-b border-black pb-1">Skills</h2>
+                                    <p class="text-sm text-black">${data.skills}</p>
+                                </div>
+                            ` : ''}
+
+                            ${!data.personal.name && !data.summary && !data.skills ? `
+                                <div class="text-center py-20 text-slate-400">
+                                    <p class="text-lg mb-2">No content yet</p>
+                                    <a href="#/resume/builder" class="text-primary hover:underline">Go to Builder →</a>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        function renderResumeProof() {
+            return `
+                <div class="min-h-screen flex flex-col bg-slate-50">
+                    <nav class="bg-white border-b border-slate-200 px-8 py-4">
+                        <div class="max-w-7xl mx-auto flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                ${Icon('layout')}
+                                <span class="font-bold text-lg">AI Resume Builder</span>
+                            </div>
+                            <div class="flex gap-6 text-sm font-medium">
+                                <a href="#/resume/builder" class="text-slate-600 hover:text-primary transition-colors">Builder</a>
+                                <a href="#/resume/preview" class="text-slate-600 hover:text-primary transition-colors">Preview</a>
+                                <a href="#/resume/proof" class="text-primary border-b-2 border-primary pb-1">Proof</a>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <main class="flex-1 max-w-4xl mx-auto px-8 py-12">
+                        <div class="bg-white rounded-xl border border-slate-200 p-8">
+                            <h1 class="text-2xl font-bold text-slate-900 mb-6">Proof of Work</h1>
+                            <div class="text-center py-20 text-slate-400">
+                                <p class="text-lg">Artifacts and submission coming soon...</p>
+                            </div>
+                        </div>
                     </main>
                 </div>
             `;
