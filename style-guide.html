@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KodNest Premium Design System</title>
+    <link rel="stylesheet" href="kodnest-premium.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <div class="top-bar-brand">KodNest Premium</div>
+                <span class="text-subtle">/</span>
+                <div class="text-subtle" style="font-weight: 500;">Design System v1.0</div>
+            </div>
+            <div class="top-bar-center">
+                <div class="badge badge-progress">Step 1 / 1</div>
+            </div>
+            <div class="top-bar-right">
+                <div class="badge badge-status">In Review</div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="context-header">
+                <h1>Design System Verification</h1>
+                <p>This page validates the "Calm, Intentional, Coherent" design philosophy. No gradients, no noise, just
+                    structure.</p>
+            </div>
+
+            <div class="workspace-grid">
+                <!-- Primary Workspace -->
+                <div class="workspace-primary">
+                    <!-- Typography Section -->
+                    <div class="card">
+                        <h3>Typography</h3>
+                        <div class="mb-4">
+                            <h1>Heading 1: Serif, Confident</h1>
+                            <h2>Heading 2: Structured, Clear</h2>
+                            <h3>Heading 3: Section Title</h3>
+                            <h4>Heading 4: Component Label</h4>
+                            <p>Body text: Clean sans-serif, 16px size for optimal readability. The color is #555555 on
+                                #F7F6F3 background. Max line width is constrained to 720px to ensure a comfortable
+                                reading experience for the user.</p>
+                        </div>
+                    </div>
+
+                    <!-- Components Section -->
+                    <div class="card">
+                        <h3>Core Components</h3>
+
+                        <h4 class="mt-4 mb-4">Buttons</h4>
+                        <div class="flex-row">
+                            <button class="btn btn-primary">Primary Action</button>
+                            <button class="btn btn-secondary">Secondary Action</button>
+                        </div>
+
+                        <h4 class="mt-4 mb-4">Inputs</h4>
+                        <div class="input-group">
+                            <label class="input-label">Project Name</label>
+                            <input type="text" class="input-field" placeholder="e.g. Flight Booking App"
+                                value="KodNest Build System">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Description</label>
+                            <input type="text" class="input-field" placeholder="Brief description...">
+                        </div>
+
+                        <h4 class="mt-4 mb-4">Badges</h4>
+                        <div class="flex-row">
+                            <span class="badge badge-status">Not Started</span>
+                            <span class="badge badge-progress">In Progress</span>
+                            <span class="badge badge-success">Shipped</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secondary Panel -->
+                <div class="panel-secondary">
+                    <div class="card" style="background: transparent; border: none; padding-left: 0;">
+                        <h4>System Rules</h4>
+                        <p class="text-subtle">
+                            1. Max 4 dominant colors.<br>
+                            2. Serif headings, Sans body.<br>
+                            3. No drop shadows on cards.<br>
+                            4. Consistent 4px radius.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h4>Assistant Prompt</h4>
+                        <p class="mb-4 text-subtle">Copy this context for the AI:</p>
+                        <div
+                            style="background: #f0f0f0; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #333; margin-bottom: 16px;">
+                            System looks good. Proceed to build features.
+                        </div>
+                        <button class="btn btn-secondary w-full">
+                            <i data-lucide="copy" style="width: 16px; margin-right: 8px;"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proof Footer -->
+        <footer class="proof-footer">
+            <div class="checklist">
+                <div class="checklist-item">
+                    <span class="checkbox-visual checked"></span>
+                    UI Built
+                </div>
+                <div class="checklist-item">
+                    <span class="checkbox-visual"></span>
+                    Logic Working
+                </div>
+                <div class="checklist-item">
+                    <span class="checkbox-visual"></span>
+                    Deployed
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-primary" style="padding: 8px 16px; font-size: 12px;">Confirm Design</button>
+            </div>
+        </footer>
+    </div>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
