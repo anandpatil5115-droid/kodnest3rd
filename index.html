@@ -40,6 +40,71 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 16px;
         }
+
+        @media print {
+
+            nav,
+            .no-print,
+            button,
+            .template-selector,
+            #debug-panel {
+                display: none !important;
+            }
+
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            #app {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .min-h-screen {
+                min-height: auto !important;
+            }
+
+            .bg-slate-50,
+            .bg-slate-100 {
+                background-color: white !important;
+            }
+
+            .shadow-lg,
+            .shadow-sm {
+                box-shadow: none !important;
+            }
+
+            main {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .max-w-4xl {
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+
+            div[style*="aspect-ratio: 8.5/11"] {
+                aspect-ratio: auto !important;
+                height: auto !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+
+            h2 {
+                page-break-after: avoid;
+            }
+
+            .mb-8,
+            .mb-12 {
+                page-break-inside: avoid;
+            }
+        }
     </style>
 </head>
 
@@ -2338,6 +2403,59 @@ Core Capabilities:
             return improvements.slice(0, 3);
         }
 
+        function getValidationWarnings(data) {
+            const warnings = [];
+            if (!data.personal.name.trim()) {
+                warnings.push('Your name is missing.');
+            }
+            if (data.experience.length === 0 && data.projects.length === 0) {
+                warnings.push('Add at least one experience or project entry.');
+            }
+            return warnings;
+        }
+
+        function copyResumeAsText() {
+            const data = getResumeData();
+            let text = `${data.personal.name.toUpperCase()}\n`;
+            text += `${data.personal.email} | ${data.personal.phone} | ${data.personal.location}\n`;
+            if (data.links.github || data.links.linkedin) {
+                text += `${data.links.github} ${data.links.linkedin}\n`;
+            }
+            text += `\nSUMMARY\n${data.summary}\n`;
+
+            if (data.education.length > 0) {
+                text += `\nEDUCATION\n`;
+                data.education.forEach(edu => {
+                    text += `${edu.degree} - ${edu.school} (${edu.year})\n`;
+                    if (edu.gpa) text += `GPA: ${edu.gpa}\n`;
+                });
+            }
+
+            if (data.experience.length > 0) {
+                text += `\nEXPERIENCE\n`;
+                data.experience.forEach(exp => {
+                    text += `${exp.title} | ${exp.company} | ${exp.duration}\n`;
+                    text += `${exp.description}\n\n`;
+                });
+            }
+
+            if (data.projects.length > 0) {
+                text += `\nPROJECTS\n`;
+                data.projects.forEach(proj => {
+                    text += `${proj.name} | ${proj.tech}\n`;
+                    text += `${proj.description}\n\n`;
+                });
+            }
+
+            text += `\nSKILLS\n${data.skills}\n`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Resume copied to clipboard as plain text!');
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+
         function renderResumeHome() {
             return `
                 <div class="min-h-screen flex flex-col bg-white">
@@ -2758,7 +2876,7 @@ Core Capabilities:
 
             return `
                 <div class="min-h-screen flex flex-col bg-slate-50">
-                    <nav class="bg-white border-b border-slate-200 px-8 py-4">
+                    <nav class="bg-white border-b border-slate-200 px-8 py-4 no-print">
                         <div class="max-w-7xl mx-auto flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 ${Icon('layout')}
@@ -2772,19 +2890,43 @@ Core Capabilities:
                         </div>
                     </nav>
 
-                    <!-- Template Selector -->
-                    <div class="bg-white border-b border-slate-100 px-8 py-3">
-                        <div class="max-w-7xl mx-auto flex items-center gap-2">
-                            <span class="text-xs font-medium text-slate-500 mr-2">Template:</span>
-                            ${['classic', 'modern', 'minimal'].map(t => `
-                                <button 
-                                    onclick="setTemplate('${t}')" 
-                                    class="px-4 py-1.5 text-xs font-medium rounded-lg transition-colors ${getTemplate() === t ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-                                    ${t.charAt(0).toUpperCase() + t.slice(1)}
+                    <!-- Template Selector & Export Actions -->
+                    <div class="bg-white border-b border-slate-100 px-8 py-3 no-print">
+                        <div class="max-w-7xl mx-auto flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-medium text-slate-500 mr-2">Template:</span>
+                                ${['classic', 'modern', 'minimal'].map(t => `
+                                    <button 
+                                        onclick="setTemplate('${t}')" 
+                                        class="px-4 py-1.5 text-xs font-medium rounded-lg transition-colors ${template === t ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                                        ${t.charAt(0).toUpperCase() + t.slice(1)}
+                                    </button>
+                                `).join('')}
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button onclick="copyResumeAsText()" 
+                                    class="px-4 py-1.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1">
+                                    ${Icon('copy')} Copy as Text
                                 </button>
-                            `).join('')}
+                                <button onclick="window.print()" 
+                                    class="px-4 py-1.5 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-1">
+                                    ${Icon('download')} Print / Save PDF
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    ${(() => {
+                    const warnings = getValidationWarnings(data);
+                    return warnings.length > 0 ? `
+                            <div class="bg-amber-50 border-b border-amber-100 px-8 py-3 no-print">
+                                <div class="max-w-4xl mx-auto flex items-center gap-3 text-amber-700">
+                                    ${Icon('alert-triangle', 'w-4 h-4')}
+                                    <p class="text-xs font-medium">Your resume may look incomplete: ${warnings.join(' ')}</p>
+                                </div>
+                            </div>
+                        ` : '';
+                })()}
 
                     <main class="flex-1 px-8 py-12">
                         <div class="max-w-4xl mx-auto bg-white shadow-lg ${styles.container}" style="aspect-ratio: 8.5/11; padding: 3rem;">
@@ -2863,7 +3005,7 @@ Core Capabilities:
                             ` : ''}
 
                             ${!data.personal.name && !data.summary && !data.skills && data.education.length === 0 && data.experience.length === 0 && data.projects.length === 0 ? `
-                                <div class="text-center py-20 text-slate-400">
+                                <div class="text-center py-20 text-slate-400 no-print">
                                     <p class="text-lg mb-2">No content yet</p>
                                     <a href="#/resume/builder" class="text-primary hover:underline">Go to Builder →</a>
                                 </div>
@@ -2873,6 +3015,7 @@ Core Capabilities:
                 </div>
             `;
         }
+
 
         function renderResumeProof() {
             return `
