@@ -239,6 +239,12 @@
             const plan = generate7DayPlan(skills);
             const questions = generateQuestions(skills);
 
+            // Initialize skill confidence map (all default to "practice")
+            const skillConfidenceMap = {};
+            Object.values(skills).flat().forEach(skill => {
+                skillConfidenceMap[skill] = 'practice';
+            });
+
             const analysis = {
                 id: Date.now().toString(),
                 createdAt: new Date().toISOString(),
@@ -249,13 +255,140 @@
                 checklist,
                 plan,
                 questions,
-                readinessScore
+                baseReadinessScore: readinessScore,
+                readinessScore,
+                skillConfidenceMap
             };
 
             saveToHistory(analysis);
             currentAnalysis = analysis;
 
             return analysis;
+        }
+
+        // Interactive features
+        function toggleSkillConfidence(skill) {
+            if (!currentAnalysis) return;
+
+            const current = currentAnalysis.skillConfidenceMap[skill];
+            currentAnalysis.skillConfidenceMap[skill] = current === 'know' ? 'practice' : 'know';
+
+            // Recalculate readiness score
+            updateReadinessScore();
+
+            // Save to localStorage
+            updateHistoryEntry(currentAnalysis);
+
+            // Re-render
+            render();
+        }
+
+        function updateReadinessScore() {
+            if (!currentAnalysis) return;
+
+            let score = currentAnalysis.baseReadinessScore;
+
+            Object.entries(currentAnalysis.skillConfidenceMap).forEach(([skill, confidence]) => {
+                if (confidence === 'know') {
+                    score += 2;
+                } else {
+                    score -= 2;
+                }
+            });
+
+            currentAnalysis.readinessScore = Math.max(0, Math.min(100, score));
+        }
+
+        function updateHistoryEntry(analysis) {
+            const history = getHistory();
+            const index = history.findIndex(item => item.id === analysis.id);
+            if (index !== -1) {
+                history[index] = analysis;
+                localStorage.setItem('placementHistory', JSON.stringify(history));
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard!');
+            });
+        }
+
+        function export7DayPlan() {
+            if (!currentAnalysis) return;
+            let text = '7-DAY PREPARATION PLAN\n\n';
+            Object.entries(currentAnalysis.plan).forEach(([day, tasks]) => {
+                text += `${day}\n`;
+                tasks.forEach(task => text += `  • ${task}\n`);
+                text += '\n';
+            });
+            copyToClipboard(text);
+        }
+
+        function exportChecklist() {
+            if (!currentAnalysis) return;
+            let text = 'ROUND-WISE PREPARATION CHECKLIST\n\n';
+            Object.entries(currentAnalysis.checklist).forEach(([round, items]) => {
+                text += `${round}\n`;
+                items.forEach(item => text += `  • ${item}\n`);
+                text += '\n';
+            });
+            copyToClipboard(text);
+        }
+
+        function exportQuestions() {
+            if (!currentAnalysis) return;
+            let text = '10 LIKELY INTERVIEW QUESTIONS\n\n';
+            currentAnalysis.questions.forEach((q, i) => {
+                text += `${i + 1}. ${q}\n`;
+            });
+            copyToClipboard(text);
+        }
+
+        function downloadTXT() {
+            if (!currentAnalysis) return;
+
+            let content = `PLACEMENT READINESS ANALYSIS\n`;
+            content += `Company: ${currentAnalysis.company}\n`;
+            content += `Role: ${currentAnalysis.role}\n`;
+            content += `Readiness Score: ${currentAnalysis.readinessScore}/100\n`;
+            content += `Date: ${new Date(currentAnalysis.createdAt).toLocaleDateString()}\n\n`;
+            content += `${'='.repeat(60)}\n\n`;
+
+            content += `EXTRACTED SKILLS\n\n`;
+            Object.entries(currentAnalysis.extractedSkills).forEach(([category, skills]) => {
+                content += `${category}: ${skills.join(', ')}\n`;
+            });
+            content += `\n${'='.repeat(60)}\n\n`;
+
+            content += `7-DAY PREPARATION PLAN\n\n`;
+            Object.entries(currentAnalysis.plan).forEach(([day, tasks]) => {
+                content += `${day}\n`;
+                tasks.forEach(task => content += `  • ${task}\n`);
+                content += '\n';
+            });
+            content += `${'='.repeat(60)}\n\n`;
+
+            content += `ROUND-WISE CHECKLIST\n\n`;
+            Object.entries(currentAnalysis.checklist).forEach(([round, items]) => {
+                content += `${round}\n`;
+                items.forEach(item => content += `  • ${item}\n`);
+                content += '\n';
+            });
+            content += `${'='.repeat(60)}\n\n`;
+
+            content += `10 LIKELY INTERVIEW QUESTIONS\n\n`;
+            currentAnalysis.questions.forEach((q, i) => {
+                content += `${i + 1}. ${q}\n`;
+            });
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentAnalysis.company}_${currentAnalysis.role}_Analysis.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         // Icon component (simple SVG)
@@ -614,17 +747,47 @@
                         </div>
                         
                         <div class="grid gap-6">
-                            <!-- Extracted Skills -->
+                            <!-- Export Buttons -->
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="export7DayPlan()" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
+                                    Copy 7-Day Plan
+                                </button>
+                                <button onclick="exportChecklist()" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
+                                    Copy Round Checklist
+                                </button>
+                                <button onclick="exportQuestions()" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
+                                    Copy 10 Questions
+                                </button>
+                                <button onclick="downloadTXT()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium">
+                                    Download as TXT
+                                </button>
+                            </div>
+                            
+                            <!-- Extracted Skills with Toggles -->
                             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                                <h3 class="text-lg font-bold text-slate-900 mb-4">Extracted Skills</h3>
+                                <h3 class="text-lg font-bold text-slate-900 mb-2">Extracted Skills</h3>
+                                <p class="text-sm text-slate-500 mb-4">Toggle your confidence level to update your readiness score</p>
                                 <div class="space-y-3">
                                     ${Object.entries(analysis.extractedSkills).map(([category, skills]) => `
                                         <div>
                                             <p class="text-sm font-medium text-slate-700 mb-2">${category}</p>
                                             <div class="flex flex-wrap gap-2">
-                                                ${skills.map(skill => `
-                                                    <span class="px-3 py-1 bg-indigo-100 text-primary rounded-full text-sm font-medium">${skill}</span>
-                                                `).join('')}
+                                                ${skills.map(skill => {
+                    const confidence = analysis.skillConfidenceMap[skill] || 'practice';
+                    const isKnow = confidence === 'know';
+                    return `
+                                                        <button onclick="toggleSkillConfidence('${skill}')" class="group relative px-3 py-1 rounded-full text-sm font-medium transition-all ${isKnow
+                            ? 'bg-green-100 text-green-700 border-2 border-green-400'
+                            : 'bg-orange-100 text-orange-700 border-2 border-orange-400'
+                        }">
+                                                            ${skill}
+                                                            <span class="ml-1 text-xs">${isKnow ? '✓' : '⚠'}</span>
+                                                            <span class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                                                ${isKnow ? 'I know this' : 'Need practice'}
+                                                            </span>
+                                                        </button>
+                                                    `;
+                }).join('')}
                                             </div>
                                         </div>
                                     `).join('')}
@@ -679,6 +842,37 @@
                                         </li>
                                     `).join('')}
                                 </ol>
+                            </div>
+                            
+                            <!-- Action Next Box -->
+                            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 shadow-sm p-6">
+                                <h3 class="text-lg font-bold text-slate-900 mb-4">🎯 Action Next</h3>
+                                ${(() => {
+                        const weakSkills = Object.entries(analysis.skillConfidenceMap)
+                            .filter(([_, conf]) => conf === 'practice')
+                            .map(([skill]) => skill)
+                            .slice(0, 3);
+
+                        return `
+                                        ${weakSkills.length > 0 ? `
+                                            <div class="mb-4">
+                                                <p class="text-sm font-medium text-slate-700 mb-2">Focus on these skills:</p>
+                                                <div class="flex flex-wrap gap-2">
+                                                    ${weakSkills.map(skill => `
+                                                        <span class="px-3 py-1 bg-white border border-orange-300 text-orange-700 rounded-full text-sm font-medium">${skill}</span>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                        <div class="bg-white rounded-lg p-4 border border-indigo-200">
+                                            <p class="text-slate-700 font-medium mb-2">💡 Suggested Next Step:</p>
+                                            <p class="text-slate-600 text-sm mb-3">Start Day 1 of your preparation plan now. Focus on fundamentals and review your projects.</p>
+                                            <button onclick="navigate('/dashboard/practice')" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors">
+                                                Start Day 1 Plan
+                                            </button>
+                                        </div>
+                                    `;
+                    })()}
                             </div>
                         </div>
                     </div>
