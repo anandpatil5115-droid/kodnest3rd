@@ -245,6 +245,12 @@
                 skillConfidenceMap[skill] = 'practice';
             });
 
+            // Generate company intel
+            const companyIntel = generateCompanyIntel(company, jdText);
+
+            // Generate round mapping
+            const roundMapping = generateRoundMapping(companyIntel.size, skills);
+
             const analysis = {
                 id: Date.now().toString(),
                 createdAt: new Date().toISOString(),
@@ -257,13 +263,165 @@
                 questions,
                 baseReadinessScore: readinessScore,
                 readinessScore,
-                skillConfidenceMap
+                skillConfidenceMap,
+                companyIntel,
+                roundMapping
             };
 
             saveToHistory(analysis);
             currentAnalysis = analysis;
 
             return analysis;
+        }
+
+        // Company Intel Generation
+        function generateCompanyIntel(companyName, jdText) {
+            const text = jdText.toLowerCase();
+
+            // Known enterprise companies
+            const enterpriseCompanies = [
+                'google', 'microsoft', 'amazon', 'meta', 'facebook', 'apple', 'netflix',
+                'infosys', 'tcs', 'wipro', 'cognizant', 'accenture', 'deloitte', 'ibm',
+                'oracle', 'salesforce', 'adobe', 'intel', 'nvidia', 'cisco', 'sap',
+                'jpmorgan', 'goldman sachs', 'morgan stanley', 'wells fargo'
+            ];
+
+            // Determine company size
+            let size = 'Startup';
+            const companyLower = companyName.toLowerCase();
+
+            if (enterpriseCompanies.some(e => companyLower.includes(e))) {
+                size = 'Enterprise';
+            } else if (text.includes('multinational') || text.includes('fortune') || text.includes('global')) {
+                size = 'Enterprise';
+            } else if (text.includes('mid-size') || text.includes('established')) {
+                size = 'Mid-size';
+            }
+
+            // Infer industry
+            let industry = 'Technology Services';
+            if (text.includes('fintech') || text.includes('banking') || text.includes('financial')) {
+                industry = 'Financial Technology';
+            } else if (text.includes('ecommerce') || text.includes('e-commerce') || text.includes('retail')) {
+                industry = 'E-commerce & Retail';
+            } else if (text.includes('healthcare') || text.includes('medical')) {
+                industry = 'Healthcare Technology';
+            } else if (text.includes('edtech') || text.includes('education')) {
+                industry = 'Education Technology';
+            } else if (text.includes('saas') || text.includes('cloud')) {
+                industry = 'Cloud & SaaS';
+            } else if (text.includes('consulting')) {
+                industry = 'IT Consulting';
+            }
+
+            // Hiring focus based on size
+            let hiringFocus = [];
+            if (size === 'Enterprise') {
+                hiringFocus = [
+                    'Strong DSA fundamentals and problem-solving',
+                    'Core CS concepts (OS, DBMS, Networks)',
+                    'System design and scalability thinking',
+                    'Clean code and best practices'
+                ];
+            } else if (size === 'Mid-size') {
+                hiringFocus = [
+                    'Balanced DSA and practical coding',
+                    'Hands-on experience with tech stack',
+                    'Project ownership and delivery',
+                    'Team collaboration skills'
+                ];
+            } else {
+                hiringFocus = [
+                    'Practical problem-solving ability',
+                    'Deep knowledge of relevant stack',
+                    'Ability to ship features quickly',
+                    'Adaptability and learning mindset'
+                ];
+            }
+
+            return {
+                size,
+                industry,
+                hiringFocus
+            };
+        }
+
+        // Round Mapping Generation
+        function generateRoundMapping(companySize, skills) {
+            const hasSkill = (cat) => skills[cat] && skills[cat].length > 0;
+            const hasDSA = hasSkill('Core CS');
+            const hasWeb = hasSkill('Web');
+
+            let rounds = [];
+
+            if (companySize === 'Enterprise') {
+                rounds = [
+                    {
+                        name: 'Round 1: Online Assessment',
+                        description: 'DSA coding + Aptitude + MCQs',
+                        why: 'Tests fundamental problem-solving and CS knowledge at scale'
+                    },
+                    {
+                        name: 'Round 2: Technical Interview I',
+                        description: 'DSA deep-dive + Core CS concepts',
+                        why: 'Evaluates coding proficiency and theoretical understanding'
+                    },
+                    {
+                        name: 'Round 3: Technical Interview II',
+                        description: 'System design + Projects discussion',
+                        why: 'Assesses scalability thinking and practical experience'
+                    },
+                    {
+                        name: 'Round 4: HR & Behavioral',
+                        description: 'Culture fit + Situational questions',
+                        why: 'Ensures alignment with company values and team dynamics'
+                    }
+                ];
+            } else if (companySize === 'Mid-size') {
+                rounds = [
+                    {
+                        name: 'Round 1: Screening',
+                        description: hasDSA ? 'Coding test + Technical MCQs' : 'Technical assessment',
+                        why: 'Filters candidates based on baseline technical skills'
+                    },
+                    {
+                        name: 'Round 2: Technical Round',
+                        description: hasWeb ? 'Stack-specific coding + DSA' : 'DSA + Core CS',
+                        why: 'Validates hands-on coding ability and problem-solving'
+                    },
+                    {
+                        name: 'Round 3: Project Discussion',
+                        description: 'Deep-dive into past projects',
+                        why: 'Understands real-world experience and ownership'
+                    },
+                    {
+                        name: 'Round 4: Final Round',
+                        description: 'Manager interview + Culture fit',
+                        why: 'Confirms team compatibility and role expectations'
+                    }
+                ];
+            } else {
+                // Startup
+                rounds = [
+                    {
+                        name: 'Round 1: Practical Coding',
+                        description: hasWeb ? 'Build a feature or solve real problem' : 'Coding challenge',
+                        why: 'Tests ability to ship working code quickly'
+                    },
+                    {
+                        name: 'Round 2: Technical Discussion',
+                        description: 'Stack deep-dive + Architecture chat',
+                        why: 'Evaluates depth of knowledge in relevant technologies'
+                    },
+                    {
+                        name: 'Round 3: Culture Fit',
+                        description: 'Founder/Team chat + Values alignment',
+                        why: 'Ensures you thrive in fast-paced startup environment'
+                    }
+                ];
+            }
+
+            return rounds;
         }
 
         // Interactive features
@@ -793,6 +951,79 @@
                                     `).join('')}
                                 </div>
                             </div>
+                            
+                            <!-- Company Intel -->
+                            ${analysis.companyIntel ? `
+                                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h3 class="text-lg font-bold text-slate-900">Company Intel</h3>
+                                        <span class="text-xs text-slate-400 italic">Demo Mode: Heuristically generated</span>
+                                    </div>
+                                    <div class="grid md:grid-cols-3 gap-4 mb-4">
+                                        <div>
+                                            <p class="text-xs text-slate-500 mb-1">Company Size</p>
+                                            <p class="font-bold text-slate-900">${analysis.companyIntel.size}</p>
+                                            <p class="text-xs text-slate-500 mt-1">
+                                                ${analysis.companyIntel.size === 'Enterprise' ? '2000+ employees' :
+                            analysis.companyIntel.size === 'Mid-size' ? '200-2000 employees' :
+                                '<200 employees'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-500 mb-1">Industry</p>
+                                            <p class="font-bold text-slate-900">${analysis.companyIntel.industry}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-500 mb-1">Hiring Type</p>
+                                            <p class="font-bold text-slate-900">
+                                                ${analysis.companyIntel.size === 'Enterprise' ? 'Structured Process' :
+                            analysis.companyIntel.size === 'Mid-size' ? 'Balanced Approach' :
+                                'Fast-paced'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-slate-700 mb-2">Typical Hiring Focus</p>
+                                        <ul class="space-y-1">
+                                            ${analysis.companyIntel.hiringFocus.map(focus => `
+                                                <li class="text-sm text-slate-600 flex items-start gap-2">
+                                                    <span class="text-primary mt-1">•</span>
+                                                    <span>${focus}</span>
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Round Mapping -->
+                            ${analysis.roundMapping ? `
+                                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                                    <h3 class="text-lg font-bold text-slate-900 mb-4">Expected Interview Rounds</h3>
+                                    <div class="relative">
+                                        <!-- Vertical timeline line -->
+                                        <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200"></div>
+                                        
+                                        <div class="space-y-6">
+                                            ${analysis.roundMapping.map((round, index) => `
+                                                <div class="relative pl-12">
+                                                    <!-- Timeline dot -->
+                                                    <div class="absolute left-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                                        ${index + 1}
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="font-bold text-slate-900 mb-1">${round.name}</h4>
+                                                        <p class="text-sm text-slate-600 mb-2">${round.description}</p>
+                                                        <div class="bg-indigo-50 border-l-4 border-primary pl-3 py-2">
+                                                            <p class="text-xs text-slate-600"><span class="font-medium">Why this matters:</span> ${round.why}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
                             
                             <!-- Round-wise Checklist -->
                             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
