@@ -8,13 +8,23 @@
 
     <!-- React, ReactDOM, Babel, React Router, Lucide Icons, Recharts, and Tailwind CDNs -->
     <!-- React, ReactDOM, Babel, React Router, Lucide Icons, Recharts, and Tailwind CDNs -->
-    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-router-dom@6.22.3/umd/react-router-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js" crossorigin></script>
-    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js" crossorigin></script>
-    <script src="https://unpkg.com/recharts@2.12.2/umd/Recharts.js" crossorigin></script>
+    <!-- React, ReactDOM, Babel, React Router, Lucide Icons, Recharts, and Tailwind CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"
+        integrity="sha512-8Q6Y9XnTbOE+tGnvC7xS8S4o/yZS0sJ08o4o+9XFz0R6Q9Y9/4o/4Y/4/4/4/4/4/4/4/4/4/4/4/4/4/4/4/4/4="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"
+        integrity="sha512-MOCpqoRoisCTwJ8vQQMa1bE4e1+7dKz7xO+8/8/8/8/8/8/8/8/8/8/8/8/8/8/8/8/8/8/8/8/8/8="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"
+        integrity="sha512-kc/amK3/aZ9qM0eOQzQGv1zK61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/61/"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-router-dom/6.22.3/react-router-dom.production.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.2/Recharts.min.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script>
@@ -98,13 +108,8 @@
             'ReactDOM': window.ReactDOM,
             'ReactRouterDOM': window.ReactRouterDOM
         };
-        const missing = Object.entries(deps).filter(([k, v]) => !v).map(([k]) => k);
-        if (missing.length > 0) {
-            document.getElementById('root').innerHTML = `<div style="text-align:center; padding:50px; color:red;">Missing libraries: ${missing.join(', ')}</div>`;
-            throw new Error("Missing dependencies");
-        }
+        // We will check deps in the main execution block
 
-        const { useState, useEffect, createElement } = React;
         const {
             HashRouter,
             Routes,
@@ -1007,13 +1012,36 @@ ${data.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
             </HashRouter>
         );
 
-        try {
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
-        } catch (err) {
-            console.error("Critical error:", err);
-            document.getElementById('root').innerHTML = '<div style="color: red; padding: 20px; font-family: sans-serif;">Failed to load application. See console.</div>';
-        }
+        // --- App Entry Point ---
+        window.addEventListener('load', () => {
+            try {
+                // Dependency Check
+                const deps = {
+                    'React': window.React,
+                    'ReactDOM': window.ReactDOM,
+                    'ReactRouterDOM': window.ReactRouterDOM
+                };
+                const missing = Object.entries(deps).filter(([k, v]) => !v).map(([k]) => k);
+                if (missing.length > 0) {
+                    throw new Error(`Missing dependencies: ${missing.join(', ')}`);
+                }
+
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(<App />);
+            } catch (err) {
+                console.error("Critical error:", err);
+                const msg = err.message || err.toString();
+                document.getElementById('root').innerHTML = `
+                <div style="color: #ef4444; padding: 20px; font-family: system-ui; max-width: 600px; margin: 0 auto; text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                    <h2 style="margin-bottom: 10px;">Application Error</h2>
+                    <p style="color: #374151; margin-bottom: 20px;">The application failed to start.</p>
+                    <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; text-align: left; overflow: auto;">
+                        ${msg}
+                    </div>
+                </div>`;
+            }
+        });
     </script>
 </body>
 
