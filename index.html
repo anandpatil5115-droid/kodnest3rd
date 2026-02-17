@@ -51,6 +51,63 @@
         let currentRoute = window.location.hash.slice(1) || '/';
         let currentAnalysis = null;
 
+        // Test Checklist
+        const testItems = [
+            { id: 'jd-required', label: 'JD required validation works', hint: 'Try submitting empty JD on Analyze page' },
+            { id: 'short-jd-warning', label: 'Short JD warning shows for <200 chars', hint: 'Enter JD with less than 200 characters' },
+            { id: 'skills-extraction', label: 'Skills extraction groups correctly', hint: 'Analyze JD with React, Java, SQL - check if grouped properly' },
+            { id: 'round-mapping', label: 'Round mapping changes based on company + skills', hint: 'Test with "Google" vs "Unknown Startup"' },
+            { id: 'score-deterministic', label: 'Score calculation is deterministic', hint: 'Same JD should give same baseScore every time' },
+            { id: 'skill-toggles', label: 'Skill toggles update score live', hint: 'Toggle skills and watch finalScore change' },
+            { id: 'persist-refresh', label: 'Changes persist after refresh', hint: 'Toggle skills, refresh page, check if preserved' },
+            { id: 'history-works', label: 'History saves and loads correctly', hint: 'Analyze JD, go to History, click entry' },
+            { id: 'export-buttons', label: 'Export buttons copy the correct content', hint: 'Click "Copy 7-Day Plan" and paste in notepad' },
+            { id: 'no-console-errors', label: 'No console errors on core pages', hint: 'Open DevTools Console, navigate all pages' }
+        ];
+
+        function getTestChecklist() {
+            const saved = localStorage.getItem('prpTestChecklist');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            // Initialize all unchecked
+            const checklist = {};
+            testItems.forEach(item => {
+                checklist[item.id] = false;
+            });
+            return checklist;
+        }
+
+        function saveTestChecklist(checklist) {
+            localStorage.setItem('prpTestChecklist', JSON.stringify(checklist));
+        }
+
+        function toggleTestItem(itemId) {
+            const checklist = getTestChecklist();
+            checklist[itemId] = !checklist[itemId];
+            saveTestChecklist(checklist);
+            render();
+        }
+
+        function resetTestChecklist() {
+            if (confirm('Reset all test checkboxes?')) {
+                localStorage.removeItem('prpTestChecklist');
+                render();
+            }
+        }
+
+        function getTestsPassed() {
+            const checklist = getTestChecklist();
+            const total = testItems.length;
+            const passed = Object.values(checklist).filter(v => v).length;
+            return { passed, total };
+        }
+
+        function isShipUnlocked() {
+            const { passed, total } = getTestsPassed();
+            return passed === total;
+        }
+
         // Analysis Engine
         const skillCategories = {
             'Core CS': ['DSA', 'OOP', 'DBMS', 'OS', 'Networks', 'Operating System', 'Data Structures', 'Algorithms'],
@@ -685,6 +742,8 @@
                             ${navLink('/dashboard/practice', 'code-2', 'Practice')}
                             ${navLink('/dashboard/assessments', 'clipboard-check', 'Assessments')}
                             ${navLink('/dashboard/history', 'clock', 'History')}
+                            ${navLink('/dashboard/test', 'check-square', 'Test Checklist')}
+                            ${navLink('/dashboard/ship', 'package', 'Ship')}
                             ${navLink('/dashboard/profile', 'user', 'Profile')}
                         </nav>
                         <div class="p-4 border-t border-slate-200">
@@ -893,6 +952,128 @@
                                         </div>
                                     </div>
                                 `).join('')}
+                            </div>
+                        `}
+                    </div>
+                `;
+            } else if (currentRoute === '/dashboard/test') {
+                const checklist = getTestChecklist();
+                const { passed, total } = getTestsPassed();
+
+                return `
+                    <div class="max-w-4xl mx-auto">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-2">Test Checklist</h2>
+                        <p class="text-slate-500 mb-8">Verify all features before shipping</p>
+                        
+                        <!-- Summary -->
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-2xl font-bold text-slate-900">Tests Passed: ${passed} / ${total}</p>
+                                    ${passed < total ? `
+                                        <p class="text-sm text-orange-600 mt-1">⚠️ Fix issues before shipping.</p>
+                                    ` : `
+                                        <p class="text-sm text-green-600 mt-1">✅ All tests passed! Ready to ship.</p>
+                                    `}
+                                </div>
+                                <button onclick="resetTestChecklist()" class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
+                                    Reset Checklist
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Checklist Items -->
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                            <div class="space-y-4">
+                                ${testItems.map(item => `
+                                    <div class="flex items-start gap-4 p-4 rounded-lg hover:bg-slate-50 transition-colors">
+                                        <input 
+                                            type="checkbox" 
+                                            id="${item.id}" 
+                                            ${checklist[item.id] ? 'checked' : ''}
+                                            onchange="toggleTestItem('${item.id}')"
+                                            class="mt-1 w-5 h-5 text-primary border-slate-300 rounded focus:ring-2 focus:ring-primary cursor-pointer"
+                                        >
+                                        <div class="flex-1">
+                                            <label for="${item.id}" class="font-medium text-slate-900 cursor-pointer block">
+                                                ${item.label}
+                                            </label>
+                                            <p class="text-sm text-slate-500 mt-1">
+                                                <span class="font-medium">How to test:</span> ${item.hint}
+                                            </p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (currentRoute === '/dashboard/ship') {
+                const unlocked = isShipUnlocked();
+                const { passed, total } = getTestsPassed();
+
+                return `
+                    <div class="max-w-4xl mx-auto">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-2">Ship Platform</h2>
+                        <p class="text-slate-500 mb-8">Deploy your Placement Readiness Platform</p>
+                        
+                        ${!unlocked ? `
+                            <!-- Locked State -->
+                            <div class="bg-white rounded-xl border border-orange-200 shadow-sm p-12 text-center">
+                                <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    ${Icon('lock', 32)}
+                                </div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2">Shipping Locked</h3>
+                                <p class="text-slate-600 mb-4">Complete all ${total} test checklist items to unlock shipping.</p>
+                                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                                    <p class="text-sm font-medium text-orange-800">Tests Passed: ${passed} / ${total}</p>
+                                    <div class="w-full bg-orange-200 rounded-full h-2 mt-2">
+                                        <div class="bg-orange-500 h-2 rounded-full transition-all" style="width: ${(passed / total) * 100}%"></div>
+                                    </div>
+                                </div>
+                                <button onclick="navigate('/dashboard/test')" class="bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-dark transition-colors">
+                                    Go to Test Checklist
+                                </button>
+                            </div>
+                        ` : `
+                            <!-- Unlocked State -->
+                            <div class="bg-white rounded-xl border border-green-200 shadow-sm p-12 text-center">
+                                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    ${Icon('check-circle', 32)}
+                                </div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2">Ready to Ship! 🎉</h3>
+                                <p class="text-slate-600 mb-6">All tests passed. Your platform is ready for deployment.</p>
+                                
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 text-left">
+                                    <h4 class="font-bold text-slate-900 mb-3">Deployment Checklist:</h4>
+                                    <ul class="space-y-2 text-sm text-slate-700">
+                                        <li class="flex items-start gap-2">
+                                            <span class="text-green-600 mt-0.5">✓</span>
+                                            <span>All ${total} tests verified and passing</span>
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="text-green-600 mt-0.5">✓</span>
+                                            <span>Code pushed to GitHub repository</span>
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="text-green-600 mt-0.5">✓</span>
+                                            <span>Premium design maintained throughout</span>
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="text-green-600 mt-0.5">✓</span>
+                                            <span>All features working offline</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="flex gap-4 justify-center">
+                                    <button onclick="navigate('/dashboard/test')" class="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium">
+                                        Review Tests
+                                    </button>
+                                    <button class="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                                        Deploy Now
+                                    </button>
+                                </div>
                             </div>
                         `}
                     </div>
