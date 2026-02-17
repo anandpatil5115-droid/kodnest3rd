@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Builder — Build Track</title>
+    <link rel="stylesheet" href="kodnest-premium.css">
+</head>
+
+<body>
+    <div id="app" class="app-container">
+        <!-- Content injected by JS -->
+    </div>
+
+    <script>
+        // --- Configuration & State ---
+
+        const steps = [
+            { id: 1, route: '/rb/01-problem', title: 'Problem Definition', prompt: 'Define the core problem the AI Resume Builder solves. Focus on ATS rejection rates and generic formatting. Specifically, address how automated tracking systems discard up to 75% of resumes before human review, and how generic templates fail to highlight key skills relevant to specific job descriptions.' },
+            { id: 2, route: '/rb/02-market', title: 'Market Research', prompt: 'Analyze the current market for resume builders. Identify key competitors like Resume.io, Teal, and NovoResume. Highlight their strengths (UI/UX, templates) and weaknesses (generic AI content, lack of specific ATS optimization). Identify the gap for a "Precision-Matched" AI Resume Builder.' },
+            { id: 3, route: '/rb/03-architecture', title: 'Architecture', prompt: 'Outline the technical architecture for the MVP. Frontend: React + Tailwind CSS. Backend: Node.js + Express. AI Integration: OpenAI API (GPT-4 for generation). Database: MongoDB for user profiles and resume data. file storage: AWS S3 or similar for PDF storage. Authentication: Firebase or JWT.' },
+            { id: 4, route: '/rb/04-hld', title: 'High-Level Design', prompt: 'Create the High-Level Design (HLD) diagram. Include: 1. User Interface (Input Form, Preview). 2. API Gateway. 3. Resume Parser Service (extracts text from existing PDFs). 4. AI Enhancement Engine (optimizes text based on job description). 5. PDF Generation Service (renders final document).' },
+            { id: 5, route: '/rb/05-lld', title: 'Low-Level Design', prompt: 'Detail the Low-Level Design (LLD). Database Schemas: User { id, email, subscription }, Resume { id, userId, data: { personalInfo, experience[], education[], skills[] } }, JobDescription { id, text, keywords[] }. API Endpoints: POST /api/resumes/generate, POST /api/resumes/parse, GET /api/resumes/:id.' },
+            { id: 6, route: '/rb/06-build', title: 'Build Phase', prompt: 'Initialize the project repository. Set up standard folder structure:\n/client (React app)\n  /src/components (ResumeForm, Preview, Dashboard)\n  /src/services (api.js)\n/server (Node app)\n  /routes (resumeRoutes.js)\n  /controllers (resumeController.js)\n  /models (Resume.js)\n\nInstall dependencies: react, axios, express, mongoose, openai.' },
+            { id: 7, route: '/rb/07-test', title: 'Test Plan', prompt: 'Design a test plan. Unit Tests: Test ResumeParser with various PDF formats. Integration Tests: Verify AI generation produces valid JSON structure. End-to-End Tests: User flow from signup -> input resume -> input JD -> generate optimized resume -> download PDF.' },
+            { id: 8, route: '/rb/08-ship', title: 'Ship Strategy', prompt: 'Define the deployment strategy. Frontend: Deploy to Vercel. Backend: Deploy to Railway or Render. Database: MongoDB Atlas. secure environment variables. Set up a CI/CD pipeline using GitHub Actions to run tests on push and deploy on merge to main.' }
+        ];
+
+        let currentRoute = window.location.hash.slice(1) || '/rb/01-problem';
+
+        // --- Persistence Helpers ---
+
+        function getArtifact(stepId) {
+            return localStorage.getItem(`rb_step_${stepId}_artifact`) || '';
+        }
+
+        function saveArtifact(stepId, content) {
+            localStorage.setItem(`rb_step_${stepId}_artifact`, content);
+            render(); // Re-render to update UI state
+        }
+
+        function getStepStatus(stepId) {
+            return JSON.parse(localStorage.getItem(`rb_step_${stepId}_status`)) || { worked: null, error: false };
+        }
+
+        function saveStepStatus(stepId, status) {
+            localStorage.setItem(`rb_step_${stepId}_status`, JSON.stringify(status));
+            render();
+        }
+
+        function getProofSubmission() {
+            return JSON.parse(localStorage.getItem('rb_proof_submission')) || { lovable: '', github: '', deploy: '' };
+        }
+
+        function saveProofSubmission(data) {
+            localStorage.setItem('rb_proof_submission', JSON.stringify(data));
+        }
+
+        // --- Logic & Gating ---
+
+        function isStepComplete(stepId) {
+            return !!getArtifact(stepId);
+        }
+
+        function canAccessStep(stepId) {
+            if (stepId === 1) return true;
+            return isStepComplete(stepId - 1);
+        }
+
+        function getCurrentStep() {
+            return steps.find(s => s.route === currentRoute) || steps[0];
+        }
+
+        function getProjectStatus() {
+            const completedCount = steps.filter(s => isStepComplete(s.id)).length;
+            if (completedCount === 8) return 'Completed';
+            if (completedCount > 0) return 'In Progress';
+            return 'Not Started';
+        }
+
+        // --- Navigation ---
+
+        function navigate(route) {
+            window.location.hash = route;
+        }
+
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.slice(1);
+            // Basic route validation
+            if (steps.some(s => s.route === hash) || hash === '/rb/proof') {
+                currentRoute = hash;
+            } else {
+                currentRoute = '/rb/01-problem';
+            }
+            render();
+        });
+
+        // --- Actions ---
+
+        function handleCopyArtifact(stepId) {
+            const artifact = getArtifact(stepId);
+            if (!artifact) return;
+            navigator.clipboard.writeText(artifact).then(() => alert('Artifact copied to clipboard!'));
+        }
+
+        function handleCopyPrompt(text) {
+            navigator.clipboard.writeText(text).then(() => alert('Prompt copied to clipboard!'));
+        }
+
+        function handleBuildStatus(stepId, worked) {
+            const status = getStepStatus(stepId);
+            status.worked = worked;
+            status.error = !worked;
+            saveStepStatus(stepId, status);
+        }
+
+        function handleProofInput(field, value) {
+            const data = getProofSubmission();
+            data[field] = value;
+            saveProofSubmission(data);
+            render(); // Update button state
+        }
+
+        function handleCopyFinalSubmission() {
+            const data = getProofSubmission();
+            const text = `AI Resume Builder — Final Submission\n\nLovable Project: ${data.lovable}\nGitHub Repo: ${data.github}\nDeployed App: ${data.deploy}\n\nStatus: 8/8 Steps Completed.`;
+            navigator.clipboard.writeText(text).then(() => alert('Final Submission copied to clipboard!'));
+        }
+
+        function handleArtifactInput(stepId, value) {
+            // Save on input (auto-save behavior) or we could have a button. 
+            // The prompt implies "Next disabled until artifact uploaded", so real-time or blur saving is good.
+            // For simplicity, let's save on change/blur in the render, but we need a helper to just update storage without re-rendering everything immediately if focus is lost.
+            // However, react-like re-rendering usually needs state. Here we use localStorage as state. 
+            // We will attach onchange event.
+            localStorage.setItem(`rb_step_${stepId}_artifact`, value);
+            // We verify completion on render. To render the "Next" button enabled immediately, we might need to trigger render.
+            // Let's use oninput to save and maybe debounce render or just let user click a "Save" button? 
+            // The previous implementation had a "Mark as Complete" button. 
+            // The prompt says "Store artifacts under rb_step_X_artifact".
+            // Let's provide a textarea for the artifact and a save button/auto-save.
+        }
+
+        // --- Rendering ---
+
+        function render() {
+            const app = document.getElementById('app');
+            const step = getCurrentStep();
+            const isProofPage = currentRoute === '/rb/proof';
+
+            // Check gating
+            if (!isProofPage && !canAccessStep(step.id)) {
+                // If trying to access a locked step, redirect to the last accessible one or show locked state.
+                // Redirecting to the previous step is safer.
+                // navigate(steps[step.id - 2].route); 
+                // OR show a locked UI. Let's show locked UI for better UX.
+            }
+
+            const activeStepId = isProofPage ? 8 : step.id; // Just for status bar context
+
+            let mainContent = '';
+            let buildPanel = '';
+            let footer = '';
+
+            if (isProofPage) {
+                // --- PROOF PAGE ---
+                const submission = getProofSubmission();
+                const allDone = steps.every(s => isStepComplete(s.id));
+                const linksValid = submission.lovable && submission.github && submission.deploy;
+
+                const stepListHtml = steps.map(s => {
+                    const done = isStepComplete(s.id);
+                    return `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: var(--s-2); border: 1px solid var(--c-border); margin-bottom: 8px; border-radius: 4px; background: var(--c-surface);">
+                         <span style="font-weight: 500;">Step ${s.id}: ${s.title}</span>
+                         <span class="badge ${done ? 'badge-success' : 'badge-status'}">${done ? 'Done' : 'Pending'}</span>
+                    </div>`;
+                }).join('');
+
+                mainContent = `
+                    <div class="card">
+                        <h2>Proof of Build</h2>
+                        <p>Verify all steps are complete and submit your project links.</p>
+                        
+                        <div style="margin-top: var(--s-3);">
+                            <h3>Step Status</h3>
+                            <div style="margin-top: var(--s-2); display: grid; gap: 8px;">
+                                ${stepListHtml}
+                            </div>
+                        </div>
+
+                        <div style="margin-top: var(--s-4);">
+                            <h3>Project Links</h3>
+                            <div style="margin-top: var(--s-2); display: flex; flex-direction: column; gap: var(--s-2);">
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 14px;">Lovable Project Link</label>
+                                    <input type="text" class="input-field" value="${submission.lovable}" oninput="handleProofInput('lovable', this.value)" placeholder="https://lovable.dev/...">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 14px;">GitHub Repository Link</label>
+                                    <input type="text" class="input-field" value="${submission.github}" oninput="handleProofInput('github', this.value)" placeholder="https://github.com/...">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 14px;">Deployed URL</label>
+                                    <input type="text" class="input-field" value="${submission.deploy}" oninput="handleProofInput('deploy', this.value)" placeholder="https://....vercel.app">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                footer = `
+                    <footer class="proof-footer">
+                        <div>
+                            <span style="font-weight: 600; font-size: 14px; margin-right: 12px;">Status: ${getProjectStatus()}</span>
+                        </div>
+                        <button class="btn btn-primary" onclick="handleCopyFinalSubmission()" ${!linksValid ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                            Copy Final Submission
+                        </button>
+                    </footer>
+                `;
+            } else {
+                // --- STEP PAGE ---
+
+                // Locked Check
+                if (!canAccessStep(step.id)) {
+                    mainContent = `
+                        <div class="card" style="text-align: center; padding: 64px;">
+                            <h2>🔒 Step Locked</h2>
+                            <p>Please complete Step ${step.id - 1} first.</p>
+                            <button class="btn btn-primary" onclick="navigate('${steps[step.id - 2].route}')" style="margin-top: 16px;">Go to Previous Step</button>
+                        </div>
+                     `;
+                    // Hide build panel content if locked
+                    buildPanel = `<div class="card" style="opacity: 0.5;"><p>Locked</p></div>`;
+                } else {
+                    const artifact = getArtifact(step.id);
+                    const status = getStepStatus(step.id);
+
+                    mainContent = `
+                        <div class="card">
+                            <h2>${step.title}</h2>
+                            <p>${step.prompt}</p>
+                            
+                            <div style="margin-top: var(--s-3);">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Your Artifact</label>
+                                <textarea class="input-field" style="min-height: 200px; font-family: monospace;" 
+                                    placeholder="Paste your code, output, or notes here..."
+                                    oninput="handleArtifactInput(${step.id}, this.value)"
+                                    onblur="render()" 
+                                >${artifact}</textarea>
+                                <p class="subtext" style="margin-top: 8px;">Content performs auto-save on blur. Ensure content is present to unlock next step.</p>
+                            </div>
+
+                            <div style="margin-top: var(--s-3); display: flex; justify-content: space-between;">
+                                <button class="btn btn-secondary" onclick="navigate('${step.id > 1 ? steps[step.id - 2].route : '#'}')" ${step.id === 1 ? 'disabled style="opacity:0.5; pointer-events:none;"' : ''}>Previous</button>
+                                ${step.id < 8 ?
+                            `<button class="btn btn-primary" onclick="navigate('${steps[step.id].route}')" ${!artifact ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>Next Step</button>`
+                            :
+                            `<button class="btn btn-primary" onclick="navigate('/rb/proof')" ${!artifact ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>Finish & Proof</button>`
+                        }
+                            </div>
+                        </div>
+                    `;
+
+                    // Build Panel Logic
+                    buildPanel = `
+                        <div class="card" style="border: none; background: transparent; padding: 0;">
+                            <h4>Build Actions</h4>
+                        </div>
+
+                        <div class="card">
+                             <label style="font-weight: 600; font-size: 12px; display: block; margin-bottom: 8px;">COPY THIS INTO LOVABLE</label>
+                             <div class="prompt-box" style="max-height: 150px; overflow-y: auto;">${step.prompt}</div>
+                             <button class="btn btn-secondary" style="width: 100%; justify-content: center;" onclick="handleCopyPrompt('${step.prompt.replace(/'/g, "\\'")}')">Copy Prompt</button>
+                        </div>
+
+                        <div class="card">
+                            <label style="font-weight: 600; font-size: 12px; display: block; margin-bottom: 8px;">BUILD IN LOVABLE</label>
+                            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                <button class="btn btn-primary" style="flex: 1; background: #2f855a; border-color: #2f855a; font-size: 12px;" onclick="handleBuildStatus(${step.id}, true)">It Worked</button>
+                                <button class="btn btn-primary" style="flex: 1; background: #c53030; border-color: #c53030; font-size: 12px;" onclick="handleBuildStatus(${step.id}, false)">Error</button>
+                            </div>
+                            <button class="btn btn-secondary" style="width: 100%; font-size: 12px;" onclick="alert('Screenshot upload placeholder')">Add Screenshot</button>
+                            
+                            ${status.worked !== null ? `
+                                <div style="margin-top: 12px; padding: 8px; background: ${status.worked ? 'var(--c-success-bg)' : 'var(--c-warning-bg)'}; border-radius: 4px; font-size: 12px; text-align: center;">
+                                    ${status.worked ? '✅ Marked as Working' : '❌ Marked as Error'}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+            }
+
+            // Construct Full Layout
+            app.innerHTML = `
+                <!-- TOP BAR -->
+                <header class="top-bar">
+                    <div class="top-bar-left">
+                        <span class="brand-name">AI Resume Builder</span>
+                    </div>
+                    <div class="top-bar-center">
+                        <span class="subtext">${isProofPage ? 'Final Verification' : `Project 3 — Step ${step.id} of 8`}</span>
+                    </div>
+                    <div class="top-bar-right">
+                        <span class="badge ${getProjectStatus() === 'Completed' ? 'badge-success' : 'badge-progress'}">${getProjectStatus()}</span>
+                    </div>
+                </header>
+
+                <!-- CONTEXT HEADER -->
+                <section class="context-header">
+                    <h1>${isProofPage ? 'Proof of Build' : step.title}</h1>
+                    <p class="subtext">${isProofPage ? 'Verify your milestones and submit your project artifacts.' : `Follow the prompt to build this step. Paste your artifact to unlock the next phase.`}</p>
+                </section>
+
+                <!-- WORKSPACE -->
+                <main class="workspace">
+                    <div class="primary-panel">
+                        ${mainContent}
+                    </div>
+                    <aside class="secondary-panel">
+                        ${!isProofPage ? buildPanel : ''}
+                    </aside>
+                </main>
+
+                <!-- FOOTER -->
+                ${footer}
+            `;
+        }
+
+        // Initialize
+        render();
+
+    </script>
+</body>
+
+</html>
