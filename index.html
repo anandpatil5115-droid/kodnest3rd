@@ -4,979 +4,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Placement Prep | Ace Your Placement</title>
+    <title>KodNest Premium - Job Tracker</title>
+    <!-- Use the new KodNest Premium Design System -->
+    <link rel="stylesheet" href="kodnest-premium.css">
 
-    <!-- React, ReactDOM, Babel, React Router, Lucide Icons, Recharts, and Tailwind CDNs -->
-    <!-- React, ReactDOM, Babel, React Router, Lucide Icons, Recharts, and Tailwind CDNs -->
-    <!-- React, ReactDOM, Babel, React Router, Lucide Icons, Recharts, and Tailwind CDNs -->
-    <!-- React, ReactDOM, Babel, React Router, Lucide Icons, Recharts, and Tailwind CDNs -->
-    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
-    <script src="https://unpkg.com/react-router-dom@6.22.3/umd/react-router-dom.production.min.js"></script>
-    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
-    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-    <script src="https://unpkg.com/recharts@2.12.2/umd/Recharts.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <script>
-        // Tailwind Configuration
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            DEFAULT: 'hsl(245, 58%, 51%)',
-                            light: 'hsl(245, 58%, 65%)',
-                            dark: 'hsl(245, 58%, 40%)',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Load Jobs Data -->
+    <script src="jobs.js"></script>
 
     <style>
-        /* Lucide icon resizing fix */
-        svg {
-            display: inline-block;
+        /* Specific overrides for app functionality if needed */
+        .kn-job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--s-2);
+        }
+
+        .kn-job-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--c-text-primary);
+            margin-bottom: var(--s-1);
+        }
+
+        .kn-company {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--c-text-secondary);
+        }
+
+        .kn-job-meta {
+            display: flex;
+            gap: var(--s-2);
+            font-size: 13px;
+            color: var(--c-text-secondary);
+            margin-bottom: var(--s-2);
+            flex-wrap: wrap;
+        }
+
+        .kn-filter-bar {
+            display: flex;
+            gap: var(--s-2);
+            padding: var(--s-2);
+            background: var(--c-surface);
+            border-bottom: 1px solid var(--c-border);
+            margin-bottom: var(--s-3);
+            flex-wrap: wrap;
+        }
+
+        .kn-job-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--s-3);
+        }
+
+        /* Modal Styles */
+        .kn-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .kn-modal-content {
+            background: var(--c-surface);
+            padding: var(--s-4);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .kn-close-btn {
+            position: absolute;
+            top: var(--s-2);
+            right: var(--s-2);
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--c-text-secondary);
+        }
+
+        /* Toast Styles */
+        #kn-toast-container {
+            position: fixed;
+            bottom: var(--s-4);
+            right: var(--s-4);
+            display: flex;
+            flex-direction: column;
+            gap: var(--s-2);
+            z-index: 2000;
+        }
+
+        .kn-toast {
+            background: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
 
-<body class="bg-slate-50 text-slate-900">
-    <div id="root">
-        <div
-            style="display: flex; height: 100vh; align-items: center; justify-content: center; font-family: sans-serif; color: #6366f1;">
-            <div style="text-align: center;">
-                <div
-                    style="width: 40px; height: 40px; border: 3px solid #e0e7ff; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;">
-                </div>
-                <p style="font-weight: 500;">Loading Placement Prep...</p>
+<body>
+
+    <div class="app-container">
+        <!-- TOP BAR -->
+        <header class="top-bar kn-header">
+            <div class="top-bar-left">
+                <span class="brand-name">KodNest Premium</span>
             </div>
+            <div class="top-bar-center">
+                <span class="subtext">Step <span id="step-indicator">1/6</span></span>
+            </div>
+            <div class="top-bar-right">
+                <span id="status-badge" class="badge badge-progress">Initializing</span>
+            </div>
+        </header>
+
+        <!-- CONTEXT HEADER -->
+        <section class="context-header kn-header">
+            <h1 class="kn-title">Welcome</h1>
+            <p class="subtext kn-subtext">Initializing the premium experience...</p>
+        </section>
+
+        <!-- MAIN WORKSPACE -->
+        <main class="workspace">
+
+            <!-- PRIMARY PANEL (70%) -->
+            <div class="primary-panel" id="primary-workspace">
+                <!-- Content injected here by app.js -->
+                <div class="card">
+                    <h3>Loading application resources...</h3>
+                </div>
+            </div>
+
+            <!-- SECONDARY PANEL (30%) -->
+            <aside class="secondary-panel" id="secondary-panel">
+                <!-- Content injected here by app.js -->
+            </aside>
+
+        </main>
+
+        <!-- PROOF FOOTER -->
+        <footer class="proof-footer">
+            <div style="display: flex; gap: var(--s-3);">
+                <!-- Checkboxes managed by app.js logic or static for now -->
+                <div class="proof-item">
+                    <div class="checkbox checked"></div>
+                    <span>UI Built</span>
+                </div>
+                <div class="proof-item">
+                    <div class="checkbox checked"></div>
+                    <span>Logic Active</span>
+                </div>
+                <div class="proof-item">
+                    <div class="checkbox"></div>
+                    <span>Tests Passed</span>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-primary" style="height: 32px; padding: 0 16px;">Ship It</button>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Job Modal -->
+    <div id="job-modal" class="kn-modal-backdrop">
+        <div class="kn-modal-content">
+            <button class="kn-close-btn" onclick="closeModal()">×</button>
+            <div id="modal-content"></div>
         </div>
     </div>
 
-    <style>
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
+    <!-- App Logic -->
+    <script src="app.js"></script>
+    <script>
+        // Initialize App
+        window.addEventListener('load', () => {
+            if (window.handleRouteChange) {
+                window.handleRouteChange();
+                window.addEventListener('hashchange', window.handleRouteChange);
+            } else {
+                console.error("Layout initialization failed: handleRouteChange missing.");
             }
-        }
-    </style>
-
-    <script type="text/babel">
-        const { useState, useEffect, createElement } = React;
-        const {
-            HashRouter,
-            Routes,
-            Route,
-            Link,
-            useNavigate,
-            Outlet,
-            useLocation
-        } = ReactRouterDOM;
-
-        const {
-            Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer
-        } = window.Recharts || {};
-
-        // --- Dashboard Components ---
-
-        const Card = ({ title, children, className = "" }) => (
-            <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all hover:shadow-md ${className}`}>
-                {title && (
-                    <div className="px-6 py-4 border-b border-slate-100 bg-white">
-                        <h3 className="font-semibold text-slate-900 tracking-tight">{title}</h3>
-                    </div>
-                )}
-                <div className="p-6">
-                    {children}
-                </div>
-            </div>
-        );
-
-        const ReadinessScore = ({ score }) => {
-            const size = 180;
-            const strokeWidth = 14;
-            const center = size / 2;
-            const radius = (size - strokeWidth) / 2;
-            const circumference = 2 * Math.PI * radius;
-            const offset = circumference - (score / 100) * circumference;
-
-            return (
-                <div className="flex flex-col items-center justify-center py-6">
-                    <div className="relative" style={{ width: size, height: size }}>
-                        <svg className="transform -rotate-90" width={size} height={size}>
-                            <circle
-                                cx={center}
-                                cy={center}
-                                r={radius}
-                                fill="transparent"
-                                stroke="#f1f5f9"
-                                strokeWidth={strokeWidth}
-                            />
-                            <circle
-                                cx={center}
-                                cy={center}
-                                r={radius}
-                                fill="transparent"
-                                stroke="hsl(245, 58%, 51%)"
-                                strokeWidth={strokeWidth}
-                                strokeDasharray={circumference}
-                                style={{
-                                    strokeDashoffset: offset,
-                                    transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    strokeLinecap: 'round'
-                                }}
-                            />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-4xl font-bold text-slate-900">{score}</span>
-                            <span className="text-slate-400 text-xs font-semibold tracking-widest uppercase mt-1">/ 100</span>
-                        </div>
-                    </div>
-                    <p className="mt-6 text-slate-500 font-bold uppercase tracking-widest text-[10px]">Readiness Score</p>
-                </div>
-            );
-        };
-
-        const SkillBreakdown = () => {
-            const data = [
-                { subject: 'DSA', A: 75, fullMark: 100 },
-                { subject: 'System Design', A: 60, fullMark: 100 },
-                { subject: 'Communication', A: 80, fullMark: 100 },
-                { subject: 'Resume', A: 85, fullMark: 100 },
-                { subject: 'Aptitude', A: 70, fullMark: 100 },
-            ];
-
-            return (
-                <div style={{ width: '100%', height: 280 }}>
-                    <ResponsiveContainer>
-                        <RadarChart cx="50%" cy="50%" outerRadius="75%" data={data}>
-                            <PolarGrid stroke="#e2e8f0" />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }} />
-                            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                            <Radar
-                                name="Skills"
-                                dataKey="A"
-                                stroke="hsl(245, 58%, 51%)"
-                                fill="hsl(245, 58%, 51%)"
-                                fillOpacity={0.4}
-                            />
-                        </RadarChart>
-                    </ResponsiveContainer>
-                </div>
-            );
-        };
-
-        const PracticeCard = () => (
-            <div className="space-y-5">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <span className="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded mb-2 inline-block">Last Topic</span>
-                        <h4 className="font-bold text-slate-900 text-xl">Dynamic Programming</h4>
-                        <p className="text-slate-500 text-sm mt-1 font-medium">3 of 10 problems completed</p>
-                    </div>
-                    <button className="bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-lg font-bold transition-all text-sm shadow-md shadow-primary/20 active:scale-95">
-                        Continue
-                    </button>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-3">
-                    <div className="bg-primary h-3 rounded-full transition-all duration-1000" style={{ width: '30%' }}></div>
-                </div>
-            </div>
-        );
-
-        const GoalTracker = () => (
-            <div className="space-y-8">
-                <div>
-                    <div className="flex justify-between items-center mb-3">
-                        <span className="font-bold text-slate-700 text-sm">Problems Solved</span>
-                        <span className="text-slate-900 font-extrabold text-sm">12 / 20 <span className="text-slate-400 font-semibold text-xs ml-1">this week</span></span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2.5">
-                        <div className="bg-primary h-2.5 rounded-full shadow-sm" style={{ width: '60%' }}></div>
-                    </div>
-                </div>
-                <div className="flex justify-between px-1">
-                    {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
-                        <div key={idx} className="flex flex-col items-center gap-3">
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold transition-all shadow-sm ${idx < 4 ? 'bg-primary text-white scale-110 shadow-primary/20' : 'bg-slate-50 text-slate-400 border border-slate-200'}`}>
-                                {idx < 4 ? <Icon name="check" size={16} /> : day}
-                            </div>
-                            <span className={`text-[10px] font-bold ${idx < 4 ? 'text-primary' : 'text-slate-400'}`}>{day}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-
-        const AssessmentList = () => {
-            const assessments = [
-                { name: 'DSA Mock Test', time: 'Tomorrow, 10:00 AM', icon: 'clipboard-list', color: 'indigo' },
-                { name: 'System Design Review', time: 'Wed, 2:00 PM', icon: 'server', color: 'purple' },
-                { name: 'HR Interview Prep', time: 'Friday, 11:00 AM', icon: 'users', color: 'blue' }
-            ];
-
-            return (
-                <div className="space-y-4">
-                    {assessments.map((item, i) => (
-                        <div key={i} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-slate-300 hover:bg-slate-50/50 transition-all cursor-pointer group">
-                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center bg-slate-100 text-primary group-hover:bg-primary group-hover:text-white transition-colors`}>
-                                <Icon name={item.icon} size={22} />
-                            </div>
-                            <div className="flex-1">
-                                <h4 className="font-bold text-slate-900 text-sm">{item.name}</h4>
-                                <p className="text-slate-500 text-xs font-medium">{item.time}</p>
-                            </div>
-                            <div className="text-slate-300 group-hover:text-primary transition-colors">
-                                <Icon name="chevron-right" size={18} />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            );
-        };
-
-        // --- Lucide Icon Wrapper Component ---
-        const Icon = ({ name, size = 20, className = "" }) => {
-            const [iconSvg, setIconSvg] = useState(null);
-
-            useEffect(() => {
-                if (window.lucide) {
-                    const icon = window.lucide.icons[name];
-                    if (icon) {
-                        const attrs = {
-                            ...icon[1],
-                            width: size,
-                            height: size,
-                            class: `lucide lucide-${name} ${className}`
-                        };
-                        const children = icon[2].map((tag, i) =>
-                            createElement(tag[0], { key: i, ...tag[1] })
-                        );
-                        setIconSvg(createElement('svg', attrs, children));
-                    }
-                }
-            }, [name, size, className]);
-
-            return iconSvg || <span className="w-5 h-5 inline-block" style={{ width: size, height: size }}></span>;
-        };
-
-        // --- Components ---
-        const NavLink = ({ to, icon, label, collapsed }) => {
-            const location = useLocation();
-            const isActive = location.pathname === to;
-
-            return (
-                <Link to={to} className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive
-                    ? 'bg-primary text-white shadow-md' : 'text-slate-600 hover:bg-slate-100 hover:text-primary'}`}>
-                    <Icon name={icon} />
-                    {!collapsed && <span className="font-medium">{label}</span>}
-                </Link>
-            );
-        };
-
-        // --- Layouts ---
-        const DashboardLayout = () => {
-            return (
-                <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-900">
-                    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
-                        <div className="p-6 border-b border-slate-200">
-                            <h2 className="text-xl font-bold text-primary flex items-center gap-2">
-                                <Icon name="layout" className="text-primary" />
-                                Placement Prep
-                            </h2>
-                        </div>
-                        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                            <NavLink to="/dashboard" icon="layout-dashboard" label="Analyze Job" />
-                            <NavLink to="/dashboard/history" icon="history" label="History" />
-                            <NavLink to="/dashboard/practice" icon="code-2" label="Practice" />
-                            <NavLink to="/dashboard/assessments" icon="clipboard-check" label="Assessments" />
-                            <NavLink to="/dashboard/resources" icon="library" label="Resources" />
-                            <NavLink to="/dashboard/profile" icon="user" label="Profile" />
-                        </nav>
-                        <div className="p-4 border-t border-slate-200">
-                            <Link to="/" className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                                <Icon name="log-out" />
-                                <span className="font-medium">Sign Out</span>
-                            </Link>
-                        </div>
-                    </aside>
-
-                    <div className="flex-1 flex flex-col h-full overflow-hidden">
-                        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-                            <h1 className="text-lg font-semibold text-slate-700">Placement Prep</h1>
-                            <div className="flex items-center gap-4">
-                                <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors relative">
-                                    <Icon name="bell" />
-                                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                                </button>
-                                <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-                                    <div className="text-right">
-                                        <p className="text-sm font-medium">Anand Patil</p>
-                                        <p className="text-xs text-slate-500">Candidate</p>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center overflow-hidden">
-                                        <Icon name="user" className="text-primary" />
-                                    </div>
-                                </div>
-                            </div>
-                        </header>
-                        <main className="flex-1 overflow-y-auto p-8">
-                            <Outlet />
-                        </main>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- Analysis Engine & History Management ---
-
-        const AnalysisEngine = {
-            skillCategories: {
-                'Core CS': ['DSA', 'OOP', 'DBMS', 'OS', 'Networks'],
-                'Languages': ['Java', 'Python', 'JavaScript', 'TypeScript', 'C', 'C++', 'C#', 'Go'],
-                'Web': ['React', 'Next.js', 'Node.js', 'Express', 'REST', 'GraphQL'],
-                'Data': ['SQL', 'MongoDB', 'PostgreSQL', 'MySQL', 'Redis'],
-                'Cloud/DevOps': ['AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'CI/CD', 'Linux'],
-                'Testing': ['Selenium', 'Cypress', 'Playwright', 'JUnit', 'PyTest']
-            },
-
-            extractSkills: (jdText) => {
-                const text = jdText.toLowerCase();
-                const extracted = {};
-                let count = 0;
-
-                Object.entries(AnalysisEngine.skillCategories).forEach(([category, skills]) => {
-                    const found = skills.filter(skill => {
-                        // Using word boundary for precise matching
-                        const regex = new RegExp(`\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-                        return regex.test(text);
-                    });
-                    if (found.length > 0) {
-                        extracted[category] = found;
-                        count += found.length;
-                    }
-                });
-
-                return count > 0 ? extracted : { 'General': ['General fresher stack'] };
-            },
-
-            calculateScore: (data) => {
-                let score = 35;
-                const categories = Object.keys(data.extractedSkills).length;
-                score += (categories * 5); // max 30
-                if (data.company) score += 10;
-                if (data.role) score += 10;
-                if (data.jdText.length > 800) score += 10;
-                return Math.min(100, score);
-            },
-
-            generatePlan: (skills) => {
-                const plan = [
-                    { days: 'Day 1–2', focus: 'Basics + Core CS', tasks: ['Review OOP concepts', 'DBMS normalization & SQL basics', 'OS memory management'] },
-                    { days: 'Day 3–4', focus: 'DSA + Coding Practice', tasks: ['Practice Array & String problems', 'Linked List & Tree traversal', 'Dynamic Programming basics'] },
-                    { days: 'Day 5', focus: 'Project & Resume Alignment', tasks: ['Refining project descriptions', 'Aligning resume to JD keywords', 'Key achievements summary'] },
-                    { days: 'Day 6', focus: 'Mock Interview', tasks: ['Behavioral questions prep', 'Solving stack-specific problems', 'System design basics'] },
-                    { days: 'Day 7', focus: 'Revision + Weak Areas', tasks: ['Deep dive into detected gaps', 'Final project review', 'Confidence building'] }
-                ];
-
-                // Adaptation
-                if (skills['Web'] && skills['Web'].includes('React')) {
-                    plan[3].tasks.push('React hooks & state management revision');
-                }
-                if (skills['Data'] && skills['Data'].includes('SQL')) {
-                    plan[0].tasks.push('Complex SQL query practice');
-                }
-
-                return plan;
-            },
-
-            generateQuestions: (skills) => {
-                const baseQs = [
-                    "Tell me about a challenging technical project you've worked on.",
-                    "How do you stay updated with the latest trends in technology?",
-                    "Describe a time you had to resolve a conflict within a team."
-                ];
-
-                const skillQs = [];
-                const allSkills = Object.values(skills).flat();
-
-                if (allSkills.includes('SQL')) skillQs.push("Explain indexing and when it helps.");
-                if (allSkills.includes('React')) skillQs.push("Explain state management options in React (Context vs Redux).");
-                if (allSkills.includes('DSA')) skillQs.push("How would you optimize search in sorted data?");
-                if (allSkills.includes('Java')) skillQs.push("What's the difference between Interfaces and Abstract classes?");
-                if (allSkills.includes('Node.js')) skillQs.push("Explain event loop in Node.js.");
-                if (allSkills.includes('Docker')) skillQs.push("What is a Docker image vs a Docker container?");
-                if (allSkills.includes('JavaScript')) skillQs.push("Explain closures and their practical uses.");
-
-                // Combine and trim
-                return [...skillQs, ...baseQs].slice(0, 10);
-            },
-
-            generateIntel: (companyName) => {
-                const enterpriseList = ['Amazon', 'Google', 'Microsoft', 'Meta', 'TCS', 'Infosys', 'Wipro', 'HCL', 'Accenture', 'IBM', 'Oracle', 'JPMC', 'Goldman Sachs'];
-                const normalizedName = companyName.trim().toLowerCase();
-                const isEnterprise = enterpriseList.some(c => normalizedName.includes(c.toLowerCase()));
-
-                return {
-                    industry: 'Technology Services',
-                    sizeCategory: isEnterprise ? 'Enterprise (2000+)' : 'Startup (<200)',
-                    sizeValue: isEnterprise ? 'Enterprise' : 'Startup',
-                    hiringFocus: isEnterprise
-                        ? 'Structured DSA + Core CS fundamentals + Scalability'
-                        : 'Practical problem solving + Tech stack depth + Rapid delivery'
-                };
-            },
-
-            generateRoundMapping: (skills, sizeCategory) => {
-                const allSkills = Object.values(skills).flat();
-                const hasDSA = allSkills.includes('DSA');
-                const hasWeb = Object.keys(skills).includes('Web');
-
-                if (sizeCategory === 'Enterprise') {
-                    return [
-                        { round: 'Round 1: Online Assessment', focus: 'DSA + Aptitude', why: 'Filters high volume of applicants via automated problem solving.' },
-                        { round: 'Round 2: Technical Interview I', focus: 'Core DSA + Computer Science', why: 'Evaluates fundamental understanding of data structures and algorithms.' },
-                        { round: 'Round 3: Technical Interview II', focus: 'System Design / Projects', why: 'Checks ability to design scalable systems and project depth.' },
-                        { round: 'Round 4: Managerial / HR', focus: 'Culture Fit + Leadership', why: 'Ensures alignment with company values and long-term goals.' }
-                    ];
-                } else {
-                    return [
-                        { round: 'Round 1: Practical Coding', focus: hasWeb ? 'Live Feature / Bug Fix' : 'Functional Programming', why: 'Focuses on immediate job-readiness and hands-on stack expertise.' },
-                        { round: 'Round 2: Deep-Dive Discussion', focus: 'Architecture / Performance', why: 'Evaluates your understanding of why things work, not just how to code.' },
-                        { round: 'Round 3: Founder / Culture Fit', focus: 'Vision + Ownership', why: 'Critical for small teams where culture and proactivity are key.' }
-                    ];
-                }
-            }
-        };
-
-        const HistoryManager = {
-            save: (entry) => {
-                const history = HistoryManager.getAll();
-                history.unshift(entry);
-                localStorage.setItem('prep_history', JSON.stringify(history));
-                return entry.id;
-            },
-            getAll: () => {
-                const data = localStorage.getItem('prep_history');
-                return data ? JSON.parse(data) : [];
-            },
-            getById: (id) => {
-                return HistoryManager.getAll().find(e => e.id === id);
-            },
-            update: (id, updates) => {
-                const history = HistoryManager.getAll();
-                const index = history.findIndex(e => e.id === id);
-                if (index !== -1) {
-                    history[index] = { ...history[index], ...updates };
-                    localStorage.setItem('prep_history', JSON.stringify(history));
-                }
-            }
-        };
-
-        // --- Pages ---
-        const DashboardPage = () => {
-            const navigate = useNavigate();
-            const [formData, setFormData] = useState({ company: '', role: '', jdText: '' });
-
-            const handleAnalyze = (e) => {
-                e.preventDefault();
-                const extractedSkills = AnalysisEngine.extractSkills(formData.jdText);
-                const score = AnalysisEngine.calculateScore({ ...formData, extractedSkills });
-                const intel = AnalysisEngine.generateIntel(formData.company);
-                const roundMapping = AnalysisEngine.generateRoundMapping(extractedSkills, intel.sizeValue);
-
-                const entry = {
-                    id: Date.now().toString(),
-                    createdAt: new Date().toISOString(),
-                    ...formData,
-                    extractedSkills,
-                    readinessScore: score,
-                    plan: AnalysisEngine.generatePlan(extractedSkills),
-                    intel: intel,
-                    roundMapping: roundMapping,
-                    questions: AnalysisEngine.generateQuestions(extractedSkills)
-                };
-
-                const id = HistoryManager.save(entry);
-                navigate(`/dashboard/results/${id}`);
-            };
-
-            return (
-                <div className="max-w-7xl mx-auto space-y-8">
-                    <div className="flex justify-between items-end">
-                        <div>
-                            <h2 className="text-3xl font-extrabold text-slate-900 leading-tight">Job Analysis</h2>
-                            <p className="text-slate-500 mt-1">Paste a Job Description to get an instant readiness report.</p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        {/* Analysis Form */}
-                        <div className="lg:col-span-12">
-                            <Card title="New JD Analysis">
-                                <form onSubmit={handleAnalyze} className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700">Company Name</label>
-                                            <input
-                                                required
-                                                placeholder="e.g. Google, Microsoft, Startup X"
-                                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                                                value={formData.company}
-                                                onChange={e => setFormData({ ...formData, company: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700">Role Title</label>
-                                            <input
-                                                required
-                                                placeholder="e.g. Frontend Engineer, SDE Intern"
-                                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                                                value={formData.role}
-                                                onChange={e => setFormData({ ...formData, role: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700">Job Description</label>
-                                        <textarea
-                                            required
-                                            placeholder="Paste the JD here to extract skills and generate a prep plan..."
-                                            className="w-full h-48 px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none"
-                                            value={formData.jdText}
-                                            onChange={e => setFormData({ ...formData, jdText: e.target.value })}
-                                        ></textarea>
-                                    </div>
-                                    <div className="flex justify-end">
-                                        <button type="submit" className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 flex items-center gap-2 group">
-                                            Analyze Readiness
-                                            <Icon name="zap" size={18} className="group-hover:scale-110 transition-transform" />
-                                        </button>
-                                    </div>
-                                </form>
-                            </Card>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const ResultsPage = () => {
-            const { id } = ReactRouterDOM.useParams();
-            const initialData = HistoryManager.getById(id);
-            const [data, setData] = useState(initialData);
-
-            if (!data) return <div className="p-8 text-center text-slate-500">Analysis not found.</div>;
-
-            // Compute current score based on confidence
-            const computeInteractiveScore = (confidenceMap) => {
-                let score = initialData.readinessScore; // Start from base already computed
-                Object.values(confidenceMap).forEach(status => {
-                    if (status === 'know') score += 2;
-                    if (status === 'practice') score -= 2;
-                });
-                return Math.max(0, Math.min(100, score));
-            };
-
-            const toggleSkill = (skill) => {
-                const confidenceMap = { ...(data.skillConfidenceMap || {}) };
-                const currentStatus = confidenceMap[skill] || 'practice';
-                const newStatus = currentStatus === 'practice' ? 'know' : 'practice';
-                confidenceMap[skill] = newStatus;
-
-                const newScore = computeInteractiveScore(confidenceMap);
-                const updatedData = { ...data, skillConfidenceMap: confidenceMap, readinessScore: newScore };
-
-                setData(updatedData);
-                HistoryManager.update(id, { skillConfidenceMap: confidenceMap, readinessScore: newScore });
-            };
-
-            const copyToClipboard = (text, label) => {
-                navigator.clipboard.writeText(text);
-                alert(`${label} copied to clipboard!`);
-            };
-
-            const downloadTxt = () => {
-                const content = `
-REPORT: ${data.role} @ ${data.company}
-Date: ${new Date(data.createdAt).toLocaleDateString()}
-Readiness Score: ${data.readinessScore}%
-
-7-DAY PLAN:
-${data.plan.map(s => `${s.days} (${s.focus}):\n- ${s.tasks.join('\n- ')}`).join('\n\n')}
-
-ROUND CHECKLIST:
-${data.checklist.map(r => `${r.round}:\n- ${r.items.join('\n- ')}`).join('\n\n')}
-
-TOP 10 INTERVIEW QUESTIONS:
-${data.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
-                `.trim();
-
-                const blob = new Blob([content], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${data.company}_Prep_Report.txt`;
-                a.click();
-                URL.revokeObjectURL(url);
-            };
-
-            const weakSkills = Object.entries(data.extractedSkills).flatMap(([_, skills]) =>
-                skills.filter(s => (data.skillConfidenceMap && data.skillConfidenceMap[s]) !== 'know')
-            ).slice(0, 3);
-
-            return (
-                <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="bg-indigo-100 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">{data.company}</span>
-                                <span className="text-slate-300">•</span>
-                                <span className="text-slate-500 text-sm">{new Date(data.createdAt).toLocaleDateString()}</span>
-                            </div>
-                            <h2 className="text-3xl font-extrabold text-slate-900">{data.role}</h2>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            <button onClick={downloadTxt} className="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary-dark transition-colors flex items-center gap-2">
-                                <Icon name="download" size={16} /> Download report
-                            </button>
-                            <button onClick={() => window.print()} className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
-                                <Icon name="printer" size={16} /> Print
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        {/* Score and Skills */}
-                        <div className="lg:col-span-4 space-y-8">
-                            <Card title="Readiness Score">
-                                <ReadinessScore score={data.readinessScore} />
-                                <p className="text-center text-[10px] text-slate-400 font-bold uppercase mt-2">Score updates live based on confidence</p>
-                            </Card>
-
-                            <Card title="Company Intel">
-                                <div className="space-y-4">
-                                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Industry</div>
-                                        <div className="text-sm font-bold text-slate-700">{data.intel?.industry || 'Technology'}</div>
-                                    </div>
-                                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Size Category</div>
-                                        <div className="text-sm font-bold text-slate-700">{data.intel?.sizeCategory || 'Enterprise (2000+)'}</div>
-                                    </div>
-                                    <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl">
-                                        <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Typical Hiring Focus</div>
-                                        <div className="text-sm font-medium text-slate-700 leading-relaxed italic">
-                                            "{data.intel?.hiringFocus || 'Standard hiring practices applied.'}"
-                                        </div>
-                                    </div>
-                                    <div className="text-center">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Demo Mode</span>
-                                        <p className="text-[9px] text-slate-400 italic mt-0.5">Company intel generated heuristically.</p>
-                                    </div>
-                                </div>
-                            </Card>
-
-                            <Card title="Skill Self-Assessment">
-                                <div className="space-y-6">
-                                    {Object.entries(data.extractedSkills).map(([cat, skills]) => (
-                                        <div key={cat}>
-                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">{cat}</h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                {skills.map(s => {
-                                                    const isKnown = data.skillConfidenceMap && data.skillConfidenceMap[s] === 'know';
-                                                    return (
-                                                        <button
-                                                            key={s}
-                                                            onClick={() => toggleSkill(s)}
-                                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-2 ${isKnown
-                                                                ? 'bg-primary border-primary text-white shadow-sm'
-                                                                : 'bg-slate-50 border-slate-100 text-slate-600 hover:border-primary/30'
-                                                                }`}
-                                                        >
-                                                            {s}
-                                                            <Icon name={isKnown ? "check" : "circle"} size={10} />
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </Card>
-                        </div>
-
-                        {/* Prep Plan */}
-                        <div className="lg:col-span-8 space-y-8">
-                            <Card title="Quick Export Tools">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <button onClick={() => copyToClipboard(data.plan.map(s => `${s.days}: ${s.focus}`).join('\n'), 'Plan')} className="p-4 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-all text-left">
-                                        <Icon name="copy" className="text-primary mb-2" size={18} />
-                                        <div className="font-bold text-sm">Copy 7-Day Plan</div>
-                                    </button>
-                                    <button onClick={() => copyToClipboard(data.checklist.map(r => r.round).join('\n'), 'Checklist')} className="p-4 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-all text-left">
-                                        <Icon name="copy" className="text-primary mb-2" size={18} />
-                                        <div className="font-bold text-sm">Copy Checklist</div>
-                                    </button>
-                                    <button onClick={() => copyToClipboard(data.questions.join('\n'), 'Questions')} className="p-4 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-all text-left">
-                                        <Icon name="copy" className="text-primary mb-2" size={18} />
-                                        <div className="font-bold text-sm">Copy 10 Questions</div>
-                                    </button>
-                                </div>
-                            </Card>
-                            <Card title="7-Day Preparation Roadmap">
-                                <div className="space-y-8">
-                                    {data.plan.map((step, i) => (
-                                        <div key={i} className="relative pl-8 pb-8 last:pb-0 border-l-2 border-slate-100 last:border-transparent">
-                                            <div className="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-primary border-4 border-indigo-50 shadow-sm"></div>
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-bold text-slate-900">{step.days}: {step.focus}</h4>
-                                            </div>
-                                            <ul className="space-y-2">
-                                                {step.tasks.map((task, j) => (
-                                                    <li key={j} className="flex items-center gap-2 text-sm text-slate-600">
-                                                        <Icon name="circle" size={8} className="text-primary fill-primary" />
-                                                        {task}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    ))}
-                                </div>
-                            </Card>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <Card title="Likely Interview Questions">
-                                    <div className="space-y-4">
-                                        {data.questions.map((q, i) => (
-                                            <div key={i} className="p-3 bg-slate-50 border border-slate-100 rounded-lg text-sm text-slate-700 font-medium">
-                                                {i + 1}. {q}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </Card>
-                                <Card title="Dynamic Round Mapping">
-                                    <div className="space-y-8">
-                                        {(data.roundMapping || []).map((round, i) => (
-                                            <div key={i} className="relative pl-8 pb-8 last:pb-0 border-l-2 border-slate-100 last:border-transparent">
-                                                <div className="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-white border-2 border-primary flex items-center justify-center font-black text-[8px] text-primary shadow-sm">{i + 1}</div>
-                                                <div className="mb-1">
-                                                    <h4 className="font-bold text-slate-900">{round.round}</h4>
-                                                    <div className="inline-block px-2 py-0.5 bg-indigo-50 text-primary text-[10px] font-bold rounded uppercase tracking-wider mb-2">{round.focus}</div>
-                                                </div>
-                                                <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                                                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Why this round matters</div>
-                                                    <p className="text-xs text-slate-600 leading-relaxed italic">{round.why}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between text-slate-400">
-                                        <div className="text-[10px] font-bold uppercase tracking-widest">Recruitment Flow Analysis</div>
-                                        <span className="text-[9px] italic">Mapped for {data.intel?.sizeValue || 'General'} size</span>
-                                    </div>
-                                </Card>
-                            </div>
-
-                            {/* Action Next Box */}
-                            <Card className="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white border-none shadow-xl">
-                                <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                                    <div className="space-y-2">
-                                        <h4 className="text-xl font-bold">Preparation Focus</h4>
-                                        <p className="text-indigo-100 text-sm">Based on your assessment, focus on these weak areas:</p>
-                                        <div className="flex flex-wrap gap-2 mt-2">
-                                            {weakSkills.length > 0 ? weakSkills.map(s => (
-                                                <span key={s} className="px-2 py-1 bg-white/10 rounded-md text-[10px] font-bold uppercase tracking-wider">{s}</span>
-                                            )) : <span className="text-xs italic">All skills mastered! Stay confident.</span>}
-                                        </div>
-                                    </div>
-                                    <div className="shrink-0 text-center space-y-4">
-                                        <div className="inline-block px-4 py-1.5 bg-white/20 rounded-full text-xs font-bold uppercase tracking-widest">Action Next</div>
-                                        <p className="text-2xl font-black">Start Day 1 plan now.</p>
-                                    </div>
-                                </div>
-                            </Card>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const HistoryPage = () => {
-            const history = HistoryManager.getAll();
-            const navigate = useNavigate();
-
-            return (
-                <div className="max-w-7xl mx-auto space-y-8">
-                    <div>
-                        <h2 className="text-3xl font-extrabold text-slate-900 leading-tight">Analysis History</h2>
-                        <p className="text-slate-500 mt-1">Review your past job descriptions and readiness reports.</p>
-                    </div>
-
-                    <Card>
-                        {history.length === 0 ? (
-                            <div className="py-20 text-center space-y-4">
-                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                                    <Icon name="history" size={32} />
-                                </div>
-                                <p className="text-slate-500 font-medium text-lg">No history yet.</p>
-                                <Link to="/dashboard" className="text-primary font-bold hover:underline">Start your first analysis</Link>
-                            </div>
-                        ) : (
-                            <div className="overflow-hidden">
-                                <table className="w-full text-left">
-                                    <thead>
-                                        <tr className="border-b border-slate-100 bg-slate-50/50">
-                                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Job Details</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Readiness</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50">
-                                        {history.map((entry) => (
-                                            <tr key={entry.id} className="hover:bg-slate-50/50 transition-colors group">
-                                                <td className="px-6 py-4 text-xs font-semibold text-slate-500">
-                                                    {new Date(entry.createdAt).toLocaleDateString()}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <p className="font-bold text-slate-900">{entry.role}</p>
-                                                    <p className="text-xs font-medium text-slate-400">{entry.company}</p>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-primary" style={{ width: `${entry.readinessScore}%` }}></div>
-                                                        </div>
-                                                        <span className="text-xs font-extrabold text-slate-700">{entry.readinessScore}%</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <button
-                                                        onClick={() => navigate(`/dashboard/results/${entry.id}`)}
-                                                        className="text-primary hover:text-primary-dark font-bold text-xs flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    >
-                                                        View Report <Icon name="arrow-right" size={12} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </Card>
-                </div>
-            );
-        };
-
-        const LandingPage = () => {
-            const navigate = useNavigate();
-            return (
-                <div className="min-h-screen flex flex-col bg-white text-slate-900">
-                    <nav className="flex items-center justify-between px-8 py-4 border-b border-slate-100">
-                        <div className="flex items-center gap-2">
-                            <Icon name="layout" className="text-primary" />
-                            <span className="text-xl font-bold">Placement Prep</span>
-                        </div>
-                        <div className="flex items-center gap-6 text-sm font-medium">
-                            <a href="#" className="text-slate-600 hover:text-primary transition-colors">Features</a>
-                            <a href="#" className="text-slate-600 hover:text-primary transition-colors">About</a>
-                            <button onClick={() => navigate('/dashboard')} className="bg-primary text-white px-6 py-2 rounded-full hover:bg-primary-dark transition-all shadow-md">
-                                Login
-                            </button>
-                        </div>
-                    </nav>
-
-                    <header className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20 bg-gradient-to-b from-indigo-50/50 to-white">
-                        <div className="inline-block px-4 py-1.5 mb-6 text-sm font-bold tracking-wide text-primary uppercase bg-indigo-100/50 rounded-full">
-                            Your Career Starts Here
-                        </div>
-                        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight">
-                            Ace Your <span className="text-primary">Placement</span>
-                        </h1>
-                        <p className="text-xl text-slate-600 max-w-2xl mb-10 leading-relaxed">
-                            Practice, assess, and prepare for your dream job with our comprehensive placement readiness platform.
-                        </p>
-                        <button onClick={() => navigate('/dashboard')} className="bg-primary text-white px-10 py-4 rounded-full text-lg font-bold hover:bg-primary-dark transition-all hover:scale-105 shadow-xl shadow-primary/30 active:scale-95">
-                            Get Started
-                        </button>
-                    </header>
-
-                    <section className="py-24 px-8 bg-slate-50/50">
-                        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
-                            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
-                                <div className="w-12 h-12 bg-indigo-100 text-primary rounded-xl flex items-center justify-center mb-6">
-                                    <Icon name="code" size={24} />
-                                </div>
-                                <h3 className="text-xl font-bold mb-2">Practice Problems</h3>
-                                <p className="text-slate-500">Master coding challenges and system design concepts with real-time feedback.</p>
-                            </div>
-                            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
-                                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-6">
-                                    <Icon name="video" size={24} />
-                                </div>
-                                <h3 className="text-xl font-bold mb-2">Mock Interviews</h3>
-                                <p className="text-slate-500">Prepare for behavioral and technical rounds with interactive simulation sessions.</p>
-                            </div>
-                            <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
-                                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6">
-                                    <Icon name="bar-chart-3" size={24} />
-                                </div>
-                                <h3 className="text-xl font-bold mb-2">Track Progress</h3>
-                                <p className="text-slate-500">Analyze your performance metrics and readiness levels with advanced data insights.</p>
-                            </div>
-                        </div>
-                    </section>
-                    <footer className="py-12 border-t border-slate-100 text-center text-slate-400 text-xs font-medium">
-                        <p>© 2026 Placement Prep. All rights reserved.</p>
-                    </footer>
-                </div>
-            );
-        };
-
-        const PagePlaceholder = ({ title, description }) => (
-            <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">{title}</h2>
-                <p className="text-slate-500 mb-8 font-medium">{description}</p>
-                <Card className="h-64 flex flex-col items-center justify-center text-slate-300 gap-4">
-                    <Icon name="construction" size={48} className="opacity-20" />
-                    <span className="italic font-medium">This module is currently being calibrated for your profile.</span>
-                </Card>
-            </div>
-        );
-
-
-
-        const App = () => (
-            <HashRouter>
-                <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/dashboard" element={<DashboardLayout />}>
-                        <Route index element={<DashboardPage />} />
-                        <Route path="results/:id" element={<ResultsPage />} />
-                        <Route path="history" element={<HistoryPage />} />
-                        <Route path="practice" element={<PagePlaceholder title="Practice Zone" description="Improve your coding skills with daily curated problems." />} />
-                        <Route path="assessments" element={<PagePlaceholder title="Assessments" description="Test your knowledge with simulated exam environments." />} />
-                        <Route path="resources" element={<PagePlaceholder title="Resource Library" description="Cheat sheets, articles, and roadmaps for your preparation." />} />
-                        <Route path="profile" element={<PagePlaceholder title="User Profile" description="Manage your personal information and track your achievements." />} />
-                    </Route>
-                </Routes>
-            </HashRouter>
-        );
-
-        // --- App Entry Point ---
-        try {
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
-        } catch (err) {
-            console.error("Critical error:", err);
-            document.getElementById('root').innerHTML = '<div style="color: red; padding: 20px; font-family: sans-serif;">Failed to load application. See console.</div>';
-        }
+        });
     </script>
 </body>
 
