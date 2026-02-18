@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KodNest Platform — Unified SaaS Dashboard</title>
+    <meta name="description" content="KodNest unified platform dashboard — access all products in one place.">
+    <link rel="stylesheet" href="platform.css">
+</head>
+
+<body>
+
+    <!-- ══════════════════════════════════════════════════════════
+       LOGIN SCREEN
+  ══════════════════════════════════════════════════════════ -->
+    <div id="login-screen" style="display:none;">
+        <div class="login-card">
+
+            <!-- Logo -->
+            <div class="login-logo">
+                <div class="login-logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                        <polyline points="2 17 12 22 22 17" />
+                        <polyline points="2 12 12 17 22 12" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="login-logo-text">KodNest</div>
+                    <div class="login-logo-sub">Unified Platform</div>
+                </div>
+            </div>
+
+            <div class="login-title">Welcome back</div>
+            <div class="login-sub">Sign in to access your workspace.</div>
+
+            <!-- Error -->
+            <div class="login-error" id="login-error"></div>
+
+            <!-- Form -->
+            <form id="login-form" autocomplete="off">
+                <div class="form-group">
+                    <label class="form-label" for="login-email">Email Address</label>
+                    <input class="form-input" type="email" id="login-email" placeholder="you@kodnest.com" required
+                        autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="login-password">Password</label>
+                    <input class="form-input" type="password" id="login-password" placeholder="••••••••" required
+                        autocomplete="current-password">
+                </div>
+
+                <!-- Role Selector -->
+                <div class="form-group">
+                    <label class="form-label">Sign in as</label>
+                    <div class="role-selector">
+                        <div class="role-option selected" data-role="admin" onclick="selectRole('admin')">
+                            <div class="role-option-title">Admin</div>
+                            <div class="role-option-sub">Full access</div>
+                        </div>
+                        <div class="role-option" data-role="user" onclick="selectRole('user')">
+                            <div class="role-option-title">User</div>
+                            <div class="role-option-sub">Standard access</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn">Sign In →</button>
+            </form>
+
+            <!-- Demo credentials hint -->
+            <div class="login-demo">
+                <strong>Demo credentials</strong><br>
+                Admin: <strong>admin@kodnest.com</strong> / <strong>admin123</strong><br>
+                User: <strong>user@kodnest.com</strong> / <strong>user123</strong><br>
+                <em>Click a role above to auto-fill.</em>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+       PLATFORM SHELL
+  ══════════════════════════════════════════════════════════ -->
+    <div id="platform-shell" style="display:none;">
+
+        <!-- ── Sidebar ── -->
+        <aside class="sidebar">
+            <!-- Logo -->
+            <a class="sidebar-logo" onclick="navigate('dashboard')" style="cursor:pointer;">
+                <div class="sidebar-logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                        <polyline points="2 17 12 22 22 17" />
+                        <polyline points="2 12 12 17 22 12" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="sidebar-logo-text">KodNest</div>
+                    <div class="sidebar-logo-sub">Platform</div>
+                </div>
+            </a>
+
+            <!-- Nav -->
+            <nav class="sidebar-nav" id="sidebar-nav">
+                <!-- Injected by platform.js -->
+            </nav>
+
+            <!-- User Footer -->
+            <div class="sidebar-footer" id="sidebar-user">
+                <!-- Injected by platform.js -->
+            </div>
+        </aside>
+
+        <!-- ── Main Area ── -->
+        <div class="main-area">
+
+            <!-- Top Bar -->
+            <header class="topbar">
+                <div class="topbar-breadcrumb" id="topbar-breadcrumb">
+                    <!-- Injected by platform.js -->
+                </div>
+                <div class="topbar-spacer"></div>
+                <div class="topbar-actions" id="topbar-right">
+                    <!-- Injected by platform.js -->
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="content-area" id="content-area">
+                <!-- Injected by platform.js -->
+            </div>
+
+        </div>
+    </div>
+
+    <script src="platform.js"></script>
+
+    <!-- Pre-fill admin credentials on load -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const emailEl = document.getElementById('login-email');
+            const passEl = document.getElementById('login-password');
+            if (emailEl && !emailEl.value) emailEl.value = 'admin@kodnest.com';
+            if (passEl && !passEl.value) passEl.value = 'admin123';
+        });
+    </script>
+
+</body>
+
+</html>

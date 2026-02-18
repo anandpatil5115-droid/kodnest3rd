@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Notification Tracker | KodNest Premium</title>
+    <link rel="stylesheet" href="kodnest-premium.css">
+</head>
+
+<body>
+    <div class="kn-container">
+        <!-- Top Bar -->
+        <header class="kn-top-bar">
+            <div class="kn-project-name">
+                <a href="#/" style="text-decoration: none; color: inherit;">JOB_TRACKER</a>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="kn-nav">
+                <a href="#/dashboard" class="kn-nav-link">Dashboard</a>
+                <a href="#/saved" class="kn-nav-link">Saved</a>
+                <a href="#/digest" class="kn-nav-link">Digest</a>
+                <a href="#/settings" class="kn-nav-link">Settings</a>
+                <a href="#/proof" class="kn-nav-link">Proof</a>
+            </nav>
+
+            <div style="display: flex; align-items: center; gap: 24px;">
+                <div class="kn-progress">
+                    <!-- Dynamic Progress -->
+                </div>
+                <div class="kn-badge">
+                    <!-- Dynamic Status -->
+                </div>
+                <div class="kn-badge kn-badge--project-status" style="margin-left: 8px;">Not Started</div>
+                <button class="kn-nav-toggle" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Context Header (Shown dynamically based on route) -->
+        <section class="kn-header">
+            <h1 class="kn-title">Welcome</h1>
+            <p class="kn-subtext">Initializing the platform...</p>
+        </section>
+
+        <!-- Main Workspace (Populated by app.js) -->
+        <main class="kn-main">
+            <div class="kn-workspace">
+                <div class="kn-card">
+                    <p class="kn-text-block">Loading your premium experience...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Proof Footer -->
+        <footer class="kn-footer">
+            <div class="kn-checklist">
+                <label class="kn-check-item">
+                    <input type="checkbox"> UI Built
+                </label>
+                <label class="kn-check-item">
+                    <input type="checkbox"> Logic Working
+                </label>
+                <label class="kn-check-item">
+                    <input type="checkbox"> Test Passed
+                </label>
+                <label class="kn-check-item">
+                    <input type="checkbox"> Deployed
+                </label>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="job-modal" class="kn-modal-overlay">
+        <div class="kn-modal">
+            <button class="kn-modal-close" onclick="closeModal()">×</button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <!-- Data & Application Logic -->
+    <script src="jobs.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
