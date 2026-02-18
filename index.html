@@ -109,7 +109,839 @@
 </head>
 
 <body class="bg-slate-50 text-slate-900">
-    <div id="app"></div>
+
+    <!-- ═══════════════════════════════════════════════════
+     KODNEST UNIFIED PLATFORM SHELL
+═══════════════════════════════════════════════════ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ── Platform Shell Styles ── */
+        :root {
+            --sidebar-w: 240px;
+            --topbar-h: 56px;
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: #1e293b;
+            --sidebar-active: #6366f1;
+            --accent: #6366f1;
+        }
+
+        #kn-platform {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Login */
+        #kn-login {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kn-login-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .kn-login-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .kn-login-logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .kn-login-logo-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .kn-login-logo-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .kn-login-logo-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .kn-login-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .kn-login-sub {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+
+        .kn-login-error {
+            color: #ef4444;
+            font-size: 13px;
+            margin-bottom: 12px;
+            min-height: 18px;
+        }
+
+        .kn-login-field {
+            margin-bottom: 16px;
+        }
+
+        .kn-login-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .kn-login-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color .2s;
+        }
+
+        .kn-login-input:focus {
+            border-color: var(--accent);
+        }
+
+        .kn-role-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .kn-role-btn {
+            padding: 10px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            background: #fff;
+            transition: all .2s;
+        }
+
+        .kn-role-btn.active {
+            border-color: var(--accent);
+            background: #eef2ff;
+        }
+
+        .kn-role-btn-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .kn-role-btn-sub {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .kn-login-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        .kn-login-btn:hover {
+            background: #4f46e5;
+        }
+
+        .kn-login-demo {
+            margin-top: 20px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.8;
+        }
+
+        .kn-login-demo strong {
+            color: #374151;
+        }
+
+        /* Shell Layout */
+        #kn-shell {
+            display: none;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #kn-shell.visible {
+            display: flex;
+        }
+
+        /* Sidebar */
+        .kn-sidebar {
+            width: var(--sidebar-w);
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .kn-sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 20px 16px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .kn-sidebar-logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .kn-sidebar-logo-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .kn-sidebar-logo-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .kn-sidebar-logo-sub {
+            font-size: 10px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .kn-sidebar-section {
+            padding: 16px 8px 4px;
+        }
+
+        .kn-sidebar-section-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            padding: 0 8px 8px;
+        }
+
+        .kn-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all .15s;
+            margin-bottom: 2px;
+            text-decoration: none;
+        }
+
+        .kn-nav-item:hover {
+            background: var(--sidebar-hover);
+            color: #e2e8f0;
+        }
+
+        .kn-nav-item.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .kn-nav-item .kn-nav-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .kn-nav-item .kn-nav-badge {
+            margin-left: auto;
+            font-size: 10px;
+            background: #1e293b;
+            color: #64748b;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .kn-nav-item.active .kn-nav-badge {
+            background: rgba(255, 255, 255, .2);
+            color: #fff;
+        }
+
+        .kn-sidebar-footer {
+            margin-top: auto;
+            padding: 12px 8px;
+            border-top: 1px solid #1e293b;
+        }
+
+        .kn-sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+        }
+
+        .kn-sidebar-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .kn-sidebar-user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .kn-sidebar-user-role {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .kn-logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all .15s;
+            margin-top: 4px;
+        }
+
+        .kn-logout-btn:hover {
+            background: #1e293b;
+            color: #ef4444;
+        }
+
+        /* Main area */
+        .kn-main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Topbar */
+        .kn-topbar {
+            height: var(--topbar-h);
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .kn-topbar-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .kn-topbar-breadcrumb .sep {
+            color: #cbd5e1;
+        }
+
+        .kn-topbar-breadcrumb .current {
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .kn-topbar-spacer {
+            flex: 1;
+        }
+
+        .kn-topbar-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #eef2ff;
+            color: var(--accent);
+        }
+
+        /* Content area */
+        .kn-content-area {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Dashboard home */
+        #kn-dashboard-home {
+            padding: 32px;
+        }
+
+        .kn-dash-greeting {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .kn-dash-sub {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 32px;
+        }
+
+        .kn-stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .kn-stat-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .kn-stat-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .kn-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .kn-products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .kn-product-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: box-shadow .2s, transform .2s;
+        }
+
+        .kn-product-card:hover {
+            box-shadow: 0 8px 30px rgba(99, 102, 241, .12);
+            transform: translateY(-2px);
+        }
+
+        .kn-product-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .kn-product-icon.p1 {
+            background: #eef2ff;
+        }
+
+        .kn-product-icon.p2 {
+            background: #f0fdf4;
+        }
+
+        .kn-product-name {
+            font-size: 17px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .kn-product-desc {
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .kn-product-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .kn-product-tag {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 500;
+        }
+
+        .kn-product-open-btn {
+            margin-top: auto;
+            padding: 10px 20px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s;
+            text-align: center;
+        }
+
+        .kn-product-open-btn:hover {
+            background: #4f46e5;
+        }
+
+        /* Product views */
+        #placement-root,
+        #jobtracker-root {
+            display: none;
+            height: 100%;
+        }
+
+        #placement-root.kn-active,
+        #jobtracker-root.kn-active {
+            display: block;
+        }
+
+        #jobtracker-root {
+            overflow-y: auto;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .kn-sidebar {
+                display: none;
+            }
+
+            .kn-products-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kn-stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <!-- LOGIN SCREEN -->
+    <div id="kn-login">
+        <div class="kn-login-card">
+            <div class="kn-login-logo">
+                <div class="kn-login-logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                        <polyline points="2 17 12 22 22 17" />
+                        <polyline points="2 12 12 17 22 12" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="kn-login-logo-name">KodNest</div>
+                    <div class="kn-login-logo-sub">Unified Platform</div>
+                </div>
+            </div>
+            <div class="kn-login-title">Welcome back</div>
+            <div class="kn-login-sub">Sign in to access your workspace.</div>
+            <div class="kn-login-error" id="kn-login-error"></div>
+            <form id="kn-login-form">
+                <div class="kn-login-field">
+                    <label class="kn-login-label">Email</label>
+                    <input class="kn-login-input" type="email" id="kn-email" placeholder="you@kodnest.com"
+                        value="admin@kodnest.com">
+                </div>
+                <div class="kn-login-field">
+                    <label class="kn-login-label">Password</label>
+                    <input class="kn-login-input" type="password" id="kn-password" placeholder="••••••••"
+                        value="admin123">
+                </div>
+                <div class="kn-login-field">
+                    <label class="kn-login-label">Sign in as</label>
+                    <div class="kn-role-row">
+                        <div class="kn-role-btn active" id="kn-role-admin" onclick="knSelectRole('admin')">
+                            <div class="kn-role-btn-title">Admin</div>
+                            <div class="kn-role-btn-sub">Full access</div>
+                        </div>
+                        <div class="kn-role-btn" id="kn-role-user" onclick="knSelectRole('user')">
+                            <div class="kn-role-btn-title">User</div>
+                            <div class="kn-role-btn-sub">Standard access</div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="kn-login-btn">Sign In →</button>
+            </form>
+            <div class="kn-login-demo">
+                <strong>Demo:</strong> admin@kodnest.com / admin123 &nbsp;|&nbsp; user@kodnest.com / user123
+            </div>
+        </div>
+    </div>
+
+    <!-- PLATFORM SHELL -->
+    <div id="kn-shell">
+
+        <!-- Sidebar -->
+        <aside class="kn-sidebar">
+            <div class="kn-sidebar-logo" onclick="knNavigate('dashboard')">
+                <div class="kn-sidebar-logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                        <polyline points="2 17 12 22 22 17" />
+                        <polyline points="2 12 12 17 22 12" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="kn-sidebar-logo-name">KodNest</div>
+                    <div class="kn-sidebar-logo-sub">Platform</div>
+                </div>
+            </div>
+
+            <div class="kn-sidebar-section">
+                <div class="kn-sidebar-section-label">Main</div>
+                <div class="kn-nav-item active" id="kn-nav-dashboard" onclick="knNavigate('dashboard')">
+                    <svg class="kn-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                    Dashboard
+                </div>
+            </div>
+
+            <div class="kn-sidebar-section">
+                <div class="kn-sidebar-section-label">Products</div>
+                <div class="kn-nav-item" id="kn-nav-placement" onclick="knNavigate('placement')">
+                    <svg class="kn-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                        <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                    </svg>
+                    Placement Platform
+                    <span class="kn-nav-badge">P2</span>
+                </div>
+                <div class="kn-nav-item" id="kn-nav-jobs" onclick="knNavigate('jobs')">
+                    <svg class="kn-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" />
+                        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                    </svg>
+                    Job Tracker
+                    <span class="kn-nav-badge">P1</span>
+                </div>
+            </div>
+
+            <div class="kn-sidebar-section">
+                <div class="kn-sidebar-section-label">Account</div>
+                <div class="kn-nav-item" id="kn-nav-profile" onclick="knNavigate('profile')">
+                    <svg class="kn-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    Profile
+                </div>
+            </div>
+
+            <div class="kn-sidebar-footer">
+                <div class="kn-sidebar-user">
+                    <div class="kn-sidebar-avatar" id="kn-avatar">A</div>
+                    <div>
+                        <div class="kn-sidebar-user-name" id="kn-user-name">Admin</div>
+                        <div class="kn-sidebar-user-role" id="kn-user-role">Administrator</div>
+                    </div>
+                </div>
+                <div class="kn-logout-btn" onclick="knLogout()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    Sign out
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Area -->
+        <div class="kn-main-area">
+            <!-- Topbar -->
+            <header class="kn-topbar">
+                <div class="kn-topbar-breadcrumb">
+                    <span>KodNest</span>
+                    <span class="sep">›</span>
+                    <span class="current" id="kn-breadcrumb">Dashboard</span>
+                </div>
+                <div class="kn-topbar-spacer"></div>
+                <span class="kn-topbar-badge" id="kn-role-badge">Admin</span>
+            </header>
+
+            <!-- Content -->
+            <div class="kn-content-area">
+
+                <!-- Dashboard Home -->
+                <div id="kn-dashboard-home">
+                    <div class="kn-dash-greeting" id="kn-greeting">Good morning 👋</div>
+                    <div class="kn-dash-sub">Welcome to your KodNest workspace. Select a product to get started.</div>
+
+                    <div class="kn-stats-row">
+                        <div class="kn-stat-card">
+                            <div class="kn-stat-label">Total Products</div>
+                            <div class="kn-stat-value">2</div>
+                        </div>
+                        <div class="kn-stat-card">
+                            <div class="kn-stat-label">Your Role</div>
+                            <div class="kn-stat-value" id="kn-stat-role" style="font-size:18px">Admin</div>
+                        </div>
+                        <div class="kn-stat-card">
+                            <div class="kn-stat-label">Platform Version</div>
+                            <div class="kn-stat-value" style="font-size:18px">v2.0</div>
+                        </div>
+                    </div>
+
+                    <div class="kn-products-grid">
+                        <!-- Product 1: Job Tracker -->
+                        <div class="kn-product-card">
+                            <div class="kn-product-icon p2">📌</div>
+                            <div>
+                                <div class="kn-product-name">Job Notification Tracker</div>
+                                <div class="kn-product-desc">Precision-matched job discovery with intelligent scoring,
+                                    daily digest, and application status tracking.</div>
+                            </div>
+                            <div class="kn-product-features">
+                                <span class="kn-product-tag">60 Indian Tech Jobs</span>
+                                <span class="kn-product-tag">Match Scoring</span>
+                                <span class="kn-product-tag">Daily Digest</span>
+                                <span class="kn-product-tag">Status Tracking</span>
+                            </div>
+                            <button class="kn-product-open-btn" onclick="knNavigate('jobs')">Open Job Tracker →</button>
+                        </div>
+
+                        <!-- Product 2: Placement Platform -->
+                        <div class="kn-product-card">
+                            <div class="kn-product-icon p1">🎓</div>
+                            <div>
+                                <div class="kn-product-name">Placement Readiness Platform</div>
+                                <div class="kn-product-desc">AI-powered JD analysis, ATS resume scoring, company intel,
+                                    round mapping, and 7-day prep plan.</div>
+                            </div>
+                            <div class="kn-product-features">
+                                <span class="kn-product-tag">JD Analyzer</span>
+                                <span class="kn-product-tag">ATS Score</span>
+                                <span class="kn-product-tag">Company Intel</span>
+                                <span class="kn-product-tag">AI Resume Builder</span>
+                            </div>
+                            <button class="kn-product-open-btn" onclick="knNavigate('placement')">Open Placement
+                                Platform →</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile View -->
+                <div id="kn-profile-view" style="display:none; padding:32px;">
+                    <h2 style="font-size:20px;font-weight:700;color:#0f172a;margin-bottom:24px;">Your Profile</h2>
+                    <div
+                        style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:28px;max-width:480px;">
+                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+                            <div style="width:56px;height:56px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;"
+                                id="kn-profile-avatar">A</div>
+                            <div>
+                                <div style="font-size:17px;font-weight:700;color:#0f172a;" id="kn-profile-name">Admin
+                                    User</div>
+                                <div style="font-size:13px;color:#64748b;" id="kn-profile-email">admin@kodnest.com</div>
+                            </div>
+                        </div>
+                        <div style="display:grid;gap:12px;">
+                            <div
+                                style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9;">
+                                <span style="font-size:13px;color:#64748b;">Role</span>
+                                <span style="font-size:13px;font-weight:600;color:#0f172a;"
+                                    id="kn-profile-role">Administrator</span>
+                            </div>
+                            <div
+                                style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9;">
+                                <span style="font-size:13px;color:#64748b;">Access</span>
+                                <span style="font-size:13px;font-weight:600;color:#0f172a;">All Products</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:12px 0;">
+                                <span style="font-size:13px;color:#64748b;">Platform</span>
+                                <span style="font-size:13px;font-weight:600;color:#0f172a;">KodNest v2.0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Placement Platform Root -->
+                <div id="placement-root"></div>
+
+                <!-- Job Tracker Root -->
+                <div id="jobtracker-root"></div>
+
+            </div><!-- /kn-content-area -->
+        </div><!-- /kn-main-area -->
+    </div><!-- /kn-shell -->
 
     <script>
         // Simple router state
@@ -1691,7 +2523,7 @@ Core Capabilities:
 
         function render() {
             currentRoute = window.location.hash.slice(1) || '/';
-            const app = document.getElementById('app');
+            const app = document.getElementById('placement-root');
 
             if (currentRoute === '/' || currentRoute === '') {
                 app.innerHTML = renderLanding();
@@ -1800,6 +2632,8 @@ Core Capabilities:
 
         window.addEventListener('hashchange', () => {
             const hash = window.location.hash.slice(1) || '/';
+            // Ignore Job Tracker routes — handled by JT namespace
+            if (hash.startsWith('/jt')) return;
             currentRoute = hash;
             render();
         });
@@ -1810,7 +2644,7 @@ Core Capabilities:
         }
 
         function render() {
-            const app = document.getElementById('app');
+            const app = document.getElementById('placement-root');
 
             if (isRbRoute(currentRoute)) {
                 renderRbProject(app);
@@ -3460,4 +4294,135 @@ Core Capabilities:
         window.addEventListener('load', render);
 
     </script>
+
+    <!-- Job Tracker scripts (loaded but not activated until user navigates to Job Tracker) -->
+    <script src="jobs.js"></script>
+    <script src="app.js"></script>
+
+    <!-- Platform Shell Controller -->
+    <script>
+        (function () {
+            // ── Auth ──
+            const USERS = {
+                'admin@kodnest.com': { password: 'admin123', role: 'admin', name: 'Admin User' },
+                'user@kodnest.com': { password: 'user123', role: 'user', name: 'Standard User' }
+            };
+            let knSession = JSON.parse(localStorage.getItem('kn_platform_auth')) || null;
+            let knSelectedRole = 'admin';
+            let knCurrentView = 'dashboard'; // dashboard | placement | jobs | profile
+            let jtInitialized = false;
+            let placementInitialized = false;
+
+            function knSelectRole(role) {
+                knSelectedRole = role;
+                document.getElementById('kn-role-admin').classList.toggle('active', role === 'admin');
+                document.getElementById('kn-role-user').classList.toggle('active', role === 'user');
+                if (role === 'admin') {
+                    document.getElementById('kn-email').value = 'admin@kodnest.com';
+                    document.getElementById('kn-password').value = 'admin123';
+                } else {
+                    document.getElementById('kn-email').value = 'user@kodnest.com';
+                    document.getElementById('kn-password').value = 'user123';
+                }
+            }
+            window.knSelectRole = knSelectRole;
+
+            document.getElementById('kn-login-form').addEventListener('submit', function (e) {
+                e.preventDefault();
+                const email = document.getElementById('kn-email').value.trim();
+                const password = document.getElementById('kn-password').value;
+                const errEl = document.getElementById('kn-login-error');
+                const user = USERS[email];
+                if (!user || user.password !== password) {
+                    errEl.textContent = 'Invalid email or password.';
+                    return;
+                }
+                errEl.textContent = '';
+                knSession = { email, role: user.role, name: user.name };
+                localStorage.setItem('kn_platform_auth', JSON.stringify(knSession));
+                knShowShell();
+            });
+
+            function knLogout() {
+                localStorage.removeItem('kn_platform_auth');
+                knSession = null;
+                document.getElementById('kn-shell').classList.remove('visible');
+                document.getElementById('kn-login').style.display = 'flex';
+            }
+            window.knLogout = knLogout;
+
+            function knShowShell() {
+                document.getElementById('kn-login').style.display = 'none';
+                document.getElementById('kn-shell').classList.add('visible');
+                // Update user info in sidebar
+                const initial = knSession.name.charAt(0).toUpperCase();
+                document.getElementById('kn-avatar').textContent = initial;
+                document.getElementById('kn-user-name').textContent = knSession.name;
+                document.getElementById('kn-user-role').textContent = knSession.role === 'admin' ? 'Administrator' : 'Standard User';
+                document.getElementById('kn-role-badge').textContent = knSession.role === 'admin' ? 'Admin' : 'User';
+                document.getElementById('kn-stat-role').textContent = knSession.role === 'admin' ? 'Admin' : 'User';
+                // Update profile
+                document.getElementById('kn-profile-avatar').textContent = initial;
+                document.getElementById('kn-profile-name').textContent = knSession.name;
+                document.getElementById('kn-profile-email').textContent = knSession.email;
+                document.getElementById('kn-profile-role').textContent = knSession.role === 'admin' ? 'Administrator' : 'Standard User';
+                // Set greeting
+                const h = new Date().getHours();
+                const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+                document.getElementById('kn-greeting').textContent = greet + ' ' + knSession.name.split(' ')[0] + ' 👋';
+                knNavigate('dashboard');
+            }
+
+            function knNavigate(view) {
+                knCurrentView = view;
+                // Hide all content areas
+                document.getElementById('kn-dashboard-home').style.display = 'none';
+                document.getElementById('kn-profile-view').style.display = 'none';
+                document.getElementById('placement-root').classList.remove('kn-active');
+                document.getElementById('jobtracker-root').classList.remove('kn-active');
+
+                // Update sidebar active states
+                ['dashboard', 'placement', 'jobs', 'profile'].forEach(v => {
+                    const el = document.getElementById('kn-nav-' + v);
+                    if (el) el.classList.toggle('active', v === view);
+                });
+
+                // Show correct view
+                if (view === 'dashboard') {
+                    document.getElementById('kn-dashboard-home').style.display = 'block';
+                    document.getElementById('kn-breadcrumb').textContent = 'Dashboard';
+                } else if (view === 'placement') {
+                    document.getElementById('placement-root').classList.add('kn-active');
+                    document.getElementById('kn-breadcrumb').textContent = 'Placement Platform';
+                    if (!placementInitialized) {
+                        // Trigger the placement platform to render
+                        window.location.hash = '#/';
+                        placementInitialized = true;
+                    } else {
+                        // Re-render to current placement route
+                        if (typeof render === 'function') render();
+                    }
+                } else if (view === 'jobs') {
+                    document.getElementById('jobtracker-root').classList.add('kn-active');
+                    document.getElementById('kn-breadcrumb').textContent = 'Job Tracker';
+                    if (!jtInitialized) {
+                        jtInitialized = true;
+                        // Boot the Job Tracker into #jobtracker-root
+                        if (typeof JT !== 'undefined') JT.boot();
+                    }
+                } else if (view === 'profile') {
+                    document.getElementById('kn-profile-view').style.display = 'block';
+                    document.getElementById('kn-breadcrumb').textContent = 'Profile';
+                }
+            }
+            window.knNavigate = knNavigate;
+
+            // Boot: check existing session
+            if (knSession) {
+                knShowShell();
+            }
+            // else login screen is already visible (default)
+        })();
+    </script>
+
 </body>

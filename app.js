@@ -853,7 +853,169 @@ window.toggleTestItem = toggleTestItem;
 window.resetTests = resetTests;
 window.updateLink = updateLink;
 window.copyFinalSubmission = copyFinalSubmission;
-window.toggleMobileMenu = () => document.querySelector('.kn-nav').classList.toggle('kn-nav--open');
+window.toggleMobileMenu = () => {
+    const nav = document.querySelector('#jobtracker-root .kn-nav');
+    if (nav) nav.classList.toggle('kn-nav--open');
+};
 
-window.addEventListener('hashchange', handleRouteChange);
-window.addEventListener('load', handleRouteChange);
+// ══════════════════════════════════════════════════════
+// JT NAMESPACE — Job Tracker Platform Integration
+// Called by the platform shell when user navigates to Job Tracker
+// ══════════════════════════════════════════════════════
+window.JT = {
+    initialized: false,
+
+    boot: function () {
+        if (this.initialized) {
+            // Already booted — just re-render current route
+            handleRouteChange();
+            return;
+        }
+        this.initialized = true;
+
+        const root = document.getElementById('jobtracker-root');
+        if (!root) return;
+
+        // Load Job Tracker CSS (kodnest-premium.css) if not already loaded
+        if (!document.getElementById('kn-premium-css')) {
+            const link = document.createElement('link');
+            link.id = 'kn-premium-css';
+            link.rel = 'stylesheet';
+            link.href = 'kodnest-premium.css';
+            document.head.appendChild(link);
+        }
+
+        // Inject the Job Tracker HTML shell into #jobtracker-root
+        root.innerHTML = `
+            <div class="kn-container">
+                <!-- Top Bar -->
+                <header class="kn-top-bar">
+                    <div class="kn-project-name">
+                        <span style="cursor:pointer;" onclick="window.location.hash='#/jt'">JOB_TRACKER</span>
+                    </div>
+                    <nav class="kn-nav">
+                        <a href="#/jt/dashboard" class="kn-nav-link">Dashboard</a>
+                        <a href="#/jt/saved" class="kn-nav-link">Saved</a>
+                        <a href="#/jt/digest" class="kn-nav-link">Digest</a>
+                        <a href="#/jt/settings" class="kn-nav-link">Settings</a>
+                        <a href="#/jt/test" class="kn-nav-link">Test</a>
+                        <a href="#/jt/proof" class="kn-nav-link">Proof</a>
+                    </nav>
+                    <div style="display: flex; align-items: center; gap: 24px;">
+                        <div class="kn-progress"></div>
+                        <div class="kn-badge"></div>
+                        <div class="kn-badge kn-badge--project-status" style="margin-left: 8px;">Not Started</div>
+                        <button class="kn-nav-toggle" onclick="window.toggleMobileMenu()" aria-label="Toggle Menu">
+                            <span></span><span></span><span></span>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Context Header -->
+                <section class="kn-header">
+                    <h1 class="kn-title">Welcome</h1>
+                    <p class="kn-subtext">Initializing the platform...</p>
+                </section>
+
+                <!-- Main Workspace -->
+                <main class="kn-main">
+                    <div class="kn-workspace">
+                        <div class="kn-card">
+                            <p class="kn-text-block">Loading your premium experience...</p>
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+            <!-- Modal Overlay -->
+            <div id="job-modal" class="kn-modal-overlay" style="display:none;">
+                <div class="kn-modal">
+                    <button class="kn-modal-close" onclick="closeModal()">×</button>
+                    <div id="modal-content"></div>
+                </div>
+            </div>
+        `;
+
+        // Override handleRouteChange to use JT sub-routes (#/jt/*)
+        // and render into the injected .kn-main inside #jobtracker-root
+        const jtRouteMap = {
+            '#/jt': '/dashboard',
+            '#/jt/dashboard': 'dashboard',
+            '#/jt/saved': '/saved',
+            '#/jt/digest': '/digest',
+            '#/jt/settings': '/settings',
+            '#/jt/test': '/test',
+            '#/jt/proof': '/proof',
+            '#/jt/ship': '/ship',
+        };
+
+        // Patch handleRouteChange to scope to #jobtracker-root
+        const origHandleRouteChange = handleRouteChange;
+        window._jtHandleRoute = function () {
+            const hash = window.location.hash || '#/jt/dashboard';
+            // Only handle JT routes
+            if (!hash.startsWith('#/jt')) return;
+
+            // Map JT hash to internal route
+            const internalHash = hash.replace('#/jt', '') || '/dashboard';
+            // Temporarily override hash for the route resolver
+            const origHash = window.location.hash;
+
+            // Resolve route
+            let activeRoute = routes[internalHash];
+            if (activeRoute && activeRoute.alias) activeRoute = routes[activeRoute.alias];
+            if (!activeRoute) activeRoute = routes['/dashboard'];
+
+            const containerEl = root.querySelector('.kn-main');
+            const headerEl = root.querySelector('.kn-header');
+
+            if (internalHash === '/' || internalHash === '') {
+                if (headerEl) headerEl.style.display = 'none';
+                if (containerEl) containerEl.style.display = 'block';
+            } else {
+                if (headerEl) headerEl.style.display = 'block';
+                if (containerEl) containerEl.style.display = 'grid';
+                const titleEl = root.querySelector('.kn-title');
+                const subtextEl = root.querySelector('.kn-subtext');
+                if (titleEl) titleEl.textContent = activeRoute.title || '';
+                if (subtextEl) subtextEl.textContent = activeRoute.subtext || '';
+            }
+
+            if (containerEl) containerEl.innerHTML = activeRoute.render ? activeRoute.render() : '';
+
+            const progressEl = root.querySelector('.kn-progress');
+            const statusEl = root.querySelector('.kn-badge:not(.kn-badge--project-status)');
+            if (progressEl) progressEl.innerHTML = `<span>${activeRoute.progress}</span><span>/</span><span>${activeRoute.step}</span>`;
+            if (statusEl) {
+                statusEl.textContent = activeRoute.status;
+                statusEl.className = 'kn-badge' + (activeRoute.status === 'Shipped' ? ' kn-badge--shipped' : '');
+            }
+
+            const globalStatusBadge = root.querySelector('.kn-badge--project-status');
+            if (globalStatusBadge) {
+                const ps = getProjectStatus();
+                globalStatusBadge.textContent = ps;
+                globalStatusBadge.className = 'kn-badge kn-badge--project-status' + (ps === 'Shipped' ? ' kn-badge--shipped' : '');
+            }
+
+            root.querySelectorAll('.kn-nav-link').forEach(link => {
+                const linkHref = link.getAttribute('href');
+                link.classList.toggle('kn-nav-link--active', linkHref === hash);
+            });
+
+            window.scrollTo(0, 0);
+        };
+
+        // Listen for hash changes to handle JT routes
+        window.addEventListener('hashchange', function () {
+            if (window.location.hash.startsWith('#/jt')) {
+                window._jtHandleRoute();
+            }
+        });
+
+        // Navigate to JT dashboard
+        window.location.hash = '#/jt/dashboard';
+        setTimeout(() => window._jtHandleRoute(), 50);
+    }
+};
+
