@@ -2197,70 +2197,107 @@ Core Capabilities:
         function calculateATSScore(data) {
             let score = 0;
             const suggestions = [];
+            const ACTION_VERBS_ATS = ['built', 'led', 'designed', 'improved', 'created', 'developed', 'implemented', 'managed', 'launched', 'reduced', 'increased', 'optimized', 'automated', 'delivered', 'established', 'achieved', 'executed', 'streamlined', 'spearheaded', 'coordinated', 'architected', 'deployed', 'migrated', 'refactored', 'scaled'];
 
-            // +15 if summary length is 40-120 words
-            const summaryWords = data.summary.trim().split(/\s+/).filter(w => w.length > 0).length;
-            if (summaryWords >= 40 && summaryWords <= 120) {
+            // +10 if name provided
+            if (data.personal.name && data.personal.name.trim()) {
+                score += 10;
+            } else {
+                suggestions.push('Add your full name (+10 points)');
+            }
+
+            // +10 if email provided
+            if (data.personal.email && data.personal.email.trim()) {
+                score += 10;
+            } else {
+                suggestions.push('Add your email address (+10 points)');
+            }
+
+            // +10 if summary > 50 chars
+            if (data.summary && data.summary.trim().length > 50) {
+                score += 10;
+            } else {
+                suggestions.push('Add a professional summary (50+ characters) (+10 points)');
+            }
+
+            // +15 if at least 1 experience entry with description (bullets)
+            const hasExperience = data.experience.length >= 1 && data.experience.some(e => e.description && e.description.trim().length > 0);
+            if (hasExperience) {
                 score += 15;
-            } else if (summaryWords < 40) {
-                suggestions.push('Write a stronger summary (40–120 words).');
+            } else {
+                suggestions.push('Add at least 1 experience entry with bullet points (+15 points)');
             }
 
-            // +10 if at least 2 projects
-            if (data.projects.length >= 2) {
+            // +10 if at least 1 education entry
+            if (data.education.length >= 1) {
                 score += 10;
             } else {
-                suggestions.push('Add at least 2 projects.');
+                suggestions.push('Add at least 1 education entry (+10 points)');
             }
 
-            // +10 if at least 1 experience entry
-            if (data.experience.length >= 1) {
-                score += 10;
-            } else {
-                suggestions.push('Add at least 1 work experience entry.');
-            }
-
-            // +10 if skills list has ≥8 items total
+            // +10 if at least 5 skills added (total across all categories)
             const totalSkillsCount = (data.skills.technical?.length || 0) +
                 (data.skills.soft?.length || 0) +
                 (data.skills.tools?.length || 0);
-            if (totalSkillsCount >= 8) {
+            if (totalSkillsCount >= 5) {
                 score += 10;
             } else {
-                suggestions.push('Add more skills (target 8+ total).');
+                suggestions.push(`Add more skills — need ${5 - totalSkillsCount} more to reach 5 (+10 points)`);
             }
 
-            // +10 if GitHub or LinkedIn link exists
-            if (data.links.github || data.links.linkedin) {
+            // +10 if at least 1 project added
+            if (data.projects.length >= 1) {
                 score += 10;
             } else {
-                suggestions.push('Add GitHub or LinkedIn profile link.');
+                suggestions.push('Add at least 1 project (+10 points)');
             }
 
-            // +15 if any experience/project bullet contains numbers
-            const hasNumbers = [...data.experience, ...data.projects].some(item => {
-                const desc = item.description || '';
-                return /\d+[%kKmM]?|\d+\+|[0-9]/.test(desc);
-            });
-            if (hasNumbers) {
-                score += 15;
-            } else if (data.experience.length > 0 || data.projects.length > 0) {
-                suggestions.push('Add measurable impact (numbers, %, metrics) in bullets.');
+            // +5 if phone provided
+            if (data.personal.phone && data.personal.phone.trim()) {
+                score += 5;
+            } else {
+                suggestions.push('Add your phone number (+5 points)');
             }
 
-            // +10 if education has complete fields
-            const hasCompleteEducation = data.education.some(edu =>
-                edu.degree && edu.school && edu.year
-            );
-            if (hasCompleteEducation) {
-                score += 10;
-            } else if (data.education.length > 0) {
-                suggestions.push('Complete all education fields (degree, school, year).');
+            // +5 if LinkedIn provided
+            if (data.links.linkedin && data.links.linkedin.trim()) {
+                score += 5;
+            } else {
+                suggestions.push('Add your LinkedIn profile link (+5 points)');
             }
+
+            // +5 if GitHub provided
+            if (data.links.github && data.links.github.trim()) {
+                score += 5;
+            } else {
+                suggestions.push('Add your GitHub profile link (+5 points)');
+            }
+
+            // +10 bonus if summary contains action verbs
+            if (data.summary) {
+                const summaryLower = data.summary.toLowerCase();
+                const hasActionVerb = ACTION_VERBS_ATS.some(v => summaryLower.includes(v));
+                if (hasActionVerb) {
+                    score += 10;
+                } else {
+                    suggestions.push('Use action verbs in your summary (built, led, designed…) (+10 points)');
+                }
+            } else {
+                suggestions.push('Use action verbs in your summary (built, led, designed…) (+10 points)');
+            }
+
+            // Determine label
+            const finalScore = Math.min(score, 100);
+            let label = 'Needs Work';
+            let color = 'red';
+            if (finalScore >= 71) { label = 'Strong Resume'; color = 'green'; }
+            else if (finalScore >= 41) { label = 'Getting There'; color = 'amber'; }
 
             return {
-                score: Math.min(score, 100),
-                suggestions: suggestions.slice(0, 3) // Max 3 suggestions
+                score: finalScore,
+                label,
+                color,
+                suggestions: suggestions.slice(0, 5)
             };
         }
 
@@ -2503,35 +2540,9 @@ Core Capabilities:
         }
 
         function getTopImprovements(data) {
-            const improvements = [];
-
-            if (data.projects.length < 2) {
-                improvements.push('Add at least 2 projects to showcase your work');
-            }
-
-            const hasNumbers = [...data.experience, ...data.projects].some(item => {
-                const desc = item.description || '';
-                return /\d+[%kKmM]?|\d+\+|[0-9]/.test(desc);
-            });
-            if (!hasNumbers && (data.experience.length > 0 || data.projects.length > 0)) {
-                improvements.push('Add measurable impact with numbers and metrics');
-            }
-
-            const summaryWords = data.summary.trim().split(/\s+/).filter(w => w.length > 0).length;
-            if (summaryWords < 40) {
-                improvements.push('Expand your summary to 40-120 words');
-            }
-
-            const skillsArray = data.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            if (skillsArray.length < 8) {
-                improvements.push('Add more skills (target 8+ items)');
-            }
-
-            if (data.experience.length === 0) {
-                improvements.push('Add work experience or internships');
-            }
-
-            return improvements.slice(0, 3);
+            // Delegate to calculateATSScore suggestions for consistency
+            const atsResult = calculateATSScore(data);
+            return atsResult.suggestions.slice(0, 3);
         }
 
         function getValidationWarnings(data) {
@@ -3003,63 +3014,47 @@ Core Capabilities:
                                 <div class="bg-white rounded-xl border border-slate-200 p-6 sticky top-24 shadow-sm">
                                     ${(() => {
                     const atsResult = calculateATSScore(data);
-                    const scoreColor = atsResult.score >= 80 ? 'emerald' : atsResult.score >= 60 ? 'amber' : 'red';
+                    const ringColor = atsResult.color === 'green' ? '#10b981' : atsResult.color === 'amber' ? '#f59e0b' : '#ef4444';
+                    const labelBg = atsResult.color === 'green' ? 'bg-emerald-50 text-emerald-700' : atsResult.color === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700';
                     return `
                                             <div class="text-center mb-4">
                                                 <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">ATS Readiness Score</h3>
-                                                <div class="relative w-32 h-32 mx-auto mb-4">
+                                                <div class="relative w-32 h-32 mx-auto mb-3">
                                                     <svg class="transform -rotate-90 w-32 h-32">
                                                         <circle cx="64" cy="64" r="56" stroke="#e2e8f0" stroke-width="8" fill="none" />
-                                                        <circle cx="64" cy="64" r="56" 
-                                                            stroke="${scoreColor === 'emerald' ? '#10b981' : scoreColor === 'amber' ? '#f59e0b' : '#ef4444'}" 
-                                                            stroke-width="8" 
+                                                        <circle cx="64" cy="64" r="56"
+                                                            stroke="${ringColor}"
+                                                            stroke-width="8"
                                                             fill="none"
                                                             stroke-dasharray="${2 * Math.PI * 56}"
                                                             stroke-dashoffset="${2 * Math.PI * 56 * (1 - atsResult.score / 100)}"
                                                             stroke-linecap="round"
-                                                            class="transition-all duration-500" />
+                                                            style="transition: stroke-dashoffset 0.5s ease;" />
                                                     </svg>
-                                                    <div class="absolute inset-0 flex items-center justify-center">
-                                                        <span class="text-4xl font-bold text-slate-900">${atsResult.score}</span>
+                                                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                                        <span class="text-3xl font-bold text-slate-900">${atsResult.score}</span>
+                                                        <span class="text-[10px] text-slate-400">/ 100</span>
                                                     </div>
                                                 </div>
-                                                <p class="text-xs text-slate-500">Out of 100</p>
+                                                <span class="inline-block px-3 py-1 rounded-full text-xs font-bold ${labelBg}">${atsResult.label}</span>
                                             </div>
                                             ${atsResult.suggestions.length > 0 ? `
                                                 <div class="mt-4 pt-4 border-t border-slate-100">
-                                                    <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Suggestions</h4>
+                                                    <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">💡 Improvements</h4>
                                                     <ul class="space-y-2">
                                                         ${atsResult.suggestions.map(s => `
-                                                            <li class="text-xs text-slate-600 flex items-start gap-2">
-                                                                <span class="text-amber-500 mt-0.5">•</span>
+                                                            <li class="text-xs text-slate-600 flex items-start gap-2 bg-amber-50 rounded-lg px-2 py-1.5">
+                                                                <span class="text-amber-500 mt-0.5 flex-shrink-0">→</span>
                                                                 <span>${s}</span>
                                                             </li>
                                                         `).join('')}
                                                     </ul>
                                                 </div>
                                             ` : `
-                                                <div class="mt-4 pt-4 border-t border-slate-100">
-                                                    <p class="text-xs text-emerald-600 font-medium">✓ Perfect score! Your resume is ATS-ready.</p>
+                                                <div class="mt-4 pt-4 border-t border-slate-100 text-center">
+                                                    <p class="text-xs text-emerald-600 font-bold">🎉 Your resume is ATS-ready!</p>
                                                 </div>
                                             `}
-                                            
-                                            <!-- Improvement Panel -->
-                                            ${(() => {
-                            const improvements = getTopImprovements(data);
-                            return improvements.length > 0 ? `
-                                                    <div class="mt-4 pt-4 border-t border-slate-100">
-                                                        <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Top 3 Improvements</h4>
-                                                        <ul class="space-y-2">
-                                                            ${improvements.map((imp, idx) => `
-                                                                <li class="text-xs text-slate-600 flex items-start gap-2">
-                                                                    <span class="text-primary font-bold">${idx + 1}.</span>
-                                                                    <span>${imp}</span>
-                                                                </li>
-                                                            `).join('')}
-                                                        </ul>
-                                                    </div>
-                                                ` : '';
-                        })()}
                                         `;
                 })()}
                                 </div>
@@ -3279,6 +3274,10 @@ Core Capabilities:
             const data = getResumeData();
             const template = getTemplate();
             const themeColor = getThemeColor();
+            const atsResult = calculateATSScore(data);
+            const ringColor = atsResult.color === 'green' ? '#10b981' : atsResult.color === 'amber' ? '#f59e0b' : '#ef4444';
+            const labelBg = atsResult.color === 'green' ? 'bg-emerald-100 text-emerald-800' : atsResult.color === 'amber' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800';
+            const circumference = 2 * Math.PI * 56;
 
             return `
                 <div class="min-h-screen flex flex-col bg-slate-50">
@@ -3306,18 +3305,18 @@ Core Capabilities:
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-medium text-slate-500 mr-2">Template:</span>
                                 ${['classic', 'modern', 'minimal'].map(t => `
-                                    <button 
-                                        onclick="setTemplate('${t}')" 
+                                    <button
+                                        onclick="setTemplate('${t}')"
                                         class="px-4 py-1.5 text-xs font-medium rounded-lg transition-colors ${template === t ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
                                         ${t.charAt(0).toUpperCase() + t.slice(1)}
                                     </button>
                                 `).join('')}
-                                
+
                                 <div class="h-4 w-[1px] bg-slate-200 mx-2"></div>
-                                
+
                                 <div class="flex items-center gap-2">
                                     ${['hsl(168, 60%, 40%)', 'hsl(220, 60%, 35%)', 'hsl(345, 60%, 35%)', 'hsl(150, 50%, 30%)', 'hsl(0, 0%, 25%)'].map(c => `
-                                        <button 
+                                        <button
                                             onclick="setThemeColor('${c}')"
                                             class="w-5 h-5 rounded-full ring-offset-2 transition-all ${themeColor === c ? 'ring-2 ring-primary scale-110 shadow-sm' : 'hover:scale-110'}"
                                             style="background-color: ${c}"></button>
@@ -3325,11 +3324,11 @@ Core Capabilities:
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
-                                <button onclick="copyResumeAsText()" 
+                                <button onclick="copyResumeAsText()"
                                     class="px-4 py-1.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1">
                                     ${Icon('copy')} Copy as Text
                                 </button>
-                                <button onclick="showToast('PDF export ready! Check your downloads.')" 
+                                <button onclick="window.print()"
                                     class="px-4 py-1.5 text-xs font-medium bg-primary text-white rounded-lg hover:opacity-90 transition-colors flex items-center gap-1">
                                     ${Icon('download')} Print / Save PDF
                                 </button>
@@ -3341,7 +3340,7 @@ Core Capabilities:
                     const warnings = getValidationWarnings(data);
                     return warnings.length > 0 ? `
                             <div class="bg-amber-50 border-b border-amber-100 px-8 py-3 no-print">
-                                <div class="max-w-4xl mx-auto flex items-center gap-3 text-amber-700">
+                                <div class="max-w-7xl mx-auto flex items-center gap-3 text-amber-700">
                                     ${Icon('alert-triangle', 'w-4 h-4')}
                                     <p class="text-xs font-medium">Your resume may look incomplete: ${warnings.join(' ')}</p>
                                 </div>
@@ -3349,9 +3348,79 @@ Core Capabilities:
                         ` : '';
                 })()}
 
-                    <main class="flex-1 px-8 py-12">
-                        <div class="max-w-4xl mx-auto bg-white shadow-2xl overflow-hidden" style="aspect-ratio: 8.5/11;">
-                            ${renderResumeContent(data, template, themeColor)}
+                    <!-- Two-column layout: ATS Panel + Resume -->
+                    <main class="flex-1 px-8 py-10">
+                        <div class="max-w-7xl mx-auto flex gap-8 items-start">
+
+                            <!-- ATS Score Panel (sticky sidebar) -->
+                            <div class="w-72 flex-shrink-0 sticky top-24 no-print">
+                                <div class="bg-white rounded-2xl border border-slate-200 shadow-lg p-6">
+                                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-5 text-center">ATS Score</h3>
+
+                                    <!-- Circular Progress -->
+                                    <div class="relative w-36 h-36 mx-auto mb-4">
+                                        <svg class="transform -rotate-90 w-36 h-36" viewBox="0 0 144 144">
+                                            <circle cx="72" cy="72" r="60" stroke="#e2e8f0" stroke-width="10" fill="none" />
+                                            <circle cx="72" cy="72" r="60"
+                                                stroke="${ringColor}"
+                                                stroke-width="10"
+                                                fill="none"
+                                                stroke-dasharray="${2 * Math.PI * 60}"
+                                                stroke-dashoffset="${2 * Math.PI * 60 * (1 - atsResult.score / 100)}"
+                                                stroke-linecap="round"
+                                                style="transition: stroke-dashoffset 0.6s ease;" />
+                                        </svg>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span class="text-4xl font-extrabold text-slate-900">${atsResult.score}</span>
+                                            <span class="text-[10px] text-slate-400 font-medium">out of 100</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Label Badge -->
+                                    <div class="text-center mb-5">
+                                        <span class="inline-block px-4 py-1.5 rounded-full text-xs font-bold ${labelBg}">${atsResult.label}</span>
+                                    </div>
+
+                                    <!-- Score Breakdown Bar -->
+                                    <div class="w-full bg-slate-100 rounded-full h-2 mb-5">
+                                        <div class="h-2 rounded-full transition-all duration-500" style="width: ${atsResult.score}%; background-color: ${ringColor};"></div>
+                                    </div>
+
+                                    ${atsResult.suggestions.length > 0 ? `
+                                        <!-- Improvement Suggestions -->
+                                        <div class="border-t border-slate-100 pt-4">
+                                            <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">💡 To Improve Score</h4>
+                                            <ul class="space-y-2">
+                                                ${atsResult.suggestions.map(s => `
+                                                    <li class="flex items-start gap-2 text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
+                                                        <span style="color: ${ringColor};" class="mt-0.5 flex-shrink-0 font-bold">→</span>
+                                                        <span>${s}</span>
+                                                    </li>
+                                                `).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : `
+                                        <div class="border-t border-slate-100 pt-4 text-center">
+                                            <div class="text-2xl mb-1">🎉</div>
+                                            <p class="text-xs font-bold text-emerald-600">Perfect Score!</p>
+                                            <p class="text-[10px] text-slate-400 mt-1">Your resume is fully ATS-optimized.</p>
+                                        </div>
+                                    `}
+
+                                    <!-- Edit Button -->
+                                    <button onclick="navigate('/resume/builder')" class="mt-5 w-full py-2 text-xs font-bold text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-colors">
+                                        ✏️ Edit Resume
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Resume Document -->
+                            <div class="flex-1 min-w-0">
+                                <div class="bg-white shadow-2xl overflow-hidden" style="aspect-ratio: 8.5/11; max-width: 850px;">
+                                    ${renderResumeContent(data, template, themeColor)}
+                                </div>
+                            </div>
+
                         </div>
                     </main>
                 </div>
