@@ -866,17 +866,21 @@ window.JT = {
     initialized: false,
 
     boot: function () {
+        const root = document.getElementById('jobtracker-root');
+        if (!root) return;
+
         if (this.initialized) {
-            // Already booted — just re-render current route
-            handleRouteChange();
+            // Already booted — re-render current JT route
+            const hash = window.location.hash;
+            if (!hash.startsWith('#/jt')) window.location.hash = '#/jt/dashboard';
+            setTimeout(() => {
+                if (typeof window._jtRender === 'function') window._jtRender();
+            }, 30);
             return;
         }
         this.initialized = true;
 
-        const root = document.getElementById('jobtracker-root');
-        if (!root) return;
-
-        // Load Job Tracker CSS (kodnest-premium.css) if not already loaded
+        // Load kodnest-premium.css if not already loaded
         if (!document.getElementById('kn-premium-css')) {
             const link = document.createElement('link');
             link.id = 'kn-premium-css';
@@ -885,26 +889,26 @@ window.JT = {
             document.head.appendChild(link);
         }
 
-        // Inject the Job Tracker HTML shell into #jobtracker-root
+        // Inject the exact HTML structure that handleRouteChange() expects:
         root.innerHTML = `
-            <div class="kn-container">
+            <div class="kn-container" id="jt-container">
                 <!-- Top Bar -->
                 <header class="kn-top-bar">
                     <div class="kn-project-name">
-                        <span style="cursor:pointer;" onclick="window.location.hash='#/jt'">JOB_TRACKER</span>
+                        <span style="cursor:pointer;" onclick="window.location.hash='#/jt/dashboard'">JOB_TRACKER</span>
                     </div>
-                    <nav class="kn-nav">
+                    <nav class="kn-nav" id="jt-nav">
                         <a href="#/jt/dashboard" class="kn-nav-link">Dashboard</a>
-                        <a href="#/jt/saved" class="kn-nav-link">Saved</a>
-                        <a href="#/jt/digest" class="kn-nav-link">Digest</a>
-                        <a href="#/jt/settings" class="kn-nav-link">Settings</a>
-                        <a href="#/jt/test" class="kn-nav-link">Test</a>
-                        <a href="#/jt/proof" class="kn-nav-link">Proof</a>
+                        <a href="#/jt/saved"     class="kn-nav-link">Saved</a>
+                        <a href="#/jt/digest"    class="kn-nav-link">Digest</a>
+                        <a href="#/jt/settings"  class="kn-nav-link">Settings</a>
+                        <a href="#/jt/test"      class="kn-nav-link">Test</a>
+                        <a href="#/jt/proof"     class="kn-nav-link">Proof</a>
                     </nav>
-                    <div style="display: flex; align-items: center; gap: 24px;">
-                        <div class="kn-progress"></div>
-                        <div class="kn-badge"></div>
-                        <div class="kn-badge kn-badge--project-status" style="margin-left: 8px;">Not Started</div>
+                    <div style="display:flex;align-items:center;gap:24px;">
+                        <div class="kn-progress" id="jt-progress"></div>
+                        <div class="kn-badge"    id="jt-status-badge"></div>
+                        <div class="kn-badge kn-badge--project-status" id="jt-project-badge">Not Started</div>
                         <button class="kn-nav-toggle" onclick="window.toggleMobileMenu()" aria-label="Toggle Menu">
                             <span></span><span></span><span></span>
                         </button>
@@ -912,18 +916,15 @@ window.JT = {
                 </header>
 
                 <!-- Context Header -->
-                <section class="kn-header">
-                    <h1 class="kn-title">Welcome</h1>
-                    <p class="kn-subtext">Initializing the platform...</p>
+                <section class="kn-header" id="jt-context-header">
+                    <h1 class="kn-title" id="jt-title">Dashboard</h1>
+                    <p class="kn-subtext" id="jt-subtext">Intelligent job discovery engine.</p>
                 </section>
 
-                <!-- Main Workspace -->
-                <main class="kn-main">
-                    <div class="kn-workspace">
-                        <div class="kn-card">
-                            <p class="kn-text-block">Loading your premium experience...</p>
-                        </div>
-                    </div>
+                <!-- Main Grid: primary workspace + secondary panel -->
+                <main class="kn-main" id="jt-main-grid">
+                    <div class="kn-workspace" id="primary-workspace"></div>
+                    <aside class="kn-panel"   id="secondary-panel"></aside>
                 </main>
             </div>
 
@@ -934,88 +935,275 @@ window.JT = {
                     <div id="modal-content"></div>
                 </div>
             </div>
+
+            <!-- Toast container -->
+            <div id="kn-toast-container" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;"></div>
         `;
 
-        // Override handleRouteChange to use JT sub-routes (#/jt/*)
-        // and render into the injected .kn-main inside #jobtracker-root
-        const jtRouteMap = {
-            '#/jt': '/dashboard',
-            '#/jt/dashboard': 'dashboard',
-            '#/jt/saved': '/saved',
-            '#/jt/digest': '/digest',
-            '#/jt/settings': '/settings',
-            '#/jt/test': '/test',
-            '#/jt/proof': '/proof',
-            '#/jt/ship': '/ship',
-        };
+        // ── _jtRender: renders the correct JT route into the injected HTML ──
+        window._jtRender = function () {
+            const fullHash = window.location.hash || '#/jt/dashboard';
+            if (!fullHash.startsWith('#/jt')) return;
 
-        // Patch handleRouteChange to scope to #jobtracker-root
-        const origHandleRouteChange = handleRouteChange;
-        window._jtHandleRoute = function () {
-            const hash = window.location.hash || '#/jt/dashboard';
-            // Only handle JT routes
-            if (!hash.startsWith('#/jt')) return;
+            const internalHash = fullHash.replace('#/jt', '') || '/dashboard';
 
-            // Map JT hash to internal route
-            const internalHash = hash.replace('#/jt', '') || '/dashboard';
-            // Temporarily override hash for the route resolver
-            const origHash = window.location.hash;
-
-            // Resolve route
             let activeRoute = routes[internalHash];
             if (activeRoute && activeRoute.alias) activeRoute = routes[activeRoute.alias];
             if (!activeRoute) activeRoute = routes['/dashboard'];
 
-            const containerEl = root.querySelector('.kn-main');
-            const headerEl = root.querySelector('.kn-header');
+            const workspaceEl = document.getElementById('primary-workspace');
+            const panelEl = document.getElementById('secondary-panel');
+            const headerEl = document.getElementById('jt-context-header');
+            const titleEl = document.getElementById('jt-title');
+            const subtextEl = document.getElementById('jt-subtext');
+            const progressEl = document.getElementById('jt-progress');
+            const statusEl = document.getElementById('jt-status-badge');
+            const projectBadge = document.getElementById('jt-project-badge');
 
             if (internalHash === '/' || internalHash === '') {
                 if (headerEl) headerEl.style.display = 'none';
-                if (containerEl) containerEl.style.display = 'block';
+                if (panelEl) panelEl.style.display = 'none';
+                if (workspaceEl) workspaceEl.innerHTML = activeRoute.render ? activeRoute.render() : '';
             } else {
                 if (headerEl) headerEl.style.display = 'block';
-                if (containerEl) containerEl.style.display = 'grid';
-                const titleEl = root.querySelector('.kn-title');
-                const subtextEl = root.querySelector('.kn-subtext');
                 if (titleEl) titleEl.textContent = activeRoute.title || '';
                 if (subtextEl) subtextEl.textContent = activeRoute.subtext || '';
+
+                if (workspaceEl) workspaceEl.innerHTML = activeRoute.render ? activeRoute.render() : '';
+
+                if (panelEl) {
+                    panelEl.style.display = 'block';
+                    panelEl.innerHTML = `
+                        <div class="kn-card">
+                            <h3>Step ${activeRoute.step || 'Info'}</h3>
+                            <p class="kn-mt-16" style="font-size:14px;color:#666;line-height:1.6;">
+                                ${activeRoute.explanation || 'Follow the primary workspace instructions to complete this milestone.'}
+                            </p>
+                            <div class="kn-mt-24">
+                                <label class="kn-label">Action Prompt</label>
+                                <div style="background:#f9f9f3;padding:12px;border:1px solid #e0ddd5;font-family:monospace;font-size:12px;margin-bottom:16px;">
+                                    ${activeRoute.prompt || 'No prompt for this step.'}
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                    <button class="kn-button kn-button--secondary" style="font-size:11px;padding:10px;" onclick="navigator.clipboard.writeText('${(activeRoute.prompt || '').replace(/'/g, "\\'")}').then(()=>showToast('Prompt copied'))">Copy Prompt</button>
+                                    <button class="kn-button kn-button--primary"   style="font-size:11px;padding:10px;">Build in Lovable</button>
+                                    <button class="kn-button kn-button--secondary" style="font-size:11px;padding:10px;" onclick="showToast('Verified')">It Worked</button>
+                                    <button class="kn-button kn-button--secondary" style="font-size:11px;padding:10px;color:var(--color-accent);" onclick="showToast('Error logged')">Error</button>
+                                </div>
+                                <button class="kn-button kn-button--secondary" style="width:100%;margin-top:8px;font-size:11px;padding:10px;">Add Screenshot</button>
+                            </div>
+                        </div>
+                    `;
+                }
             }
 
-            if (containerEl) containerEl.innerHTML = activeRoute.render ? activeRoute.render() : '';
-
-            const progressEl = root.querySelector('.kn-progress');
-            const statusEl = root.querySelector('.kn-badge:not(.kn-badge--project-status)');
             if (progressEl) progressEl.innerHTML = `<span>${activeRoute.progress}</span><span>/</span><span>${activeRoute.step}</span>`;
             if (statusEl) {
                 statusEl.textContent = activeRoute.status;
                 statusEl.className = 'kn-badge' + (activeRoute.status === 'Shipped' ? ' kn-badge--shipped' : '');
             }
-
-            const globalStatusBadge = root.querySelector('.kn-badge--project-status');
-            if (globalStatusBadge) {
+            if (projectBadge) {
                 const ps = getProjectStatus();
-                globalStatusBadge.textContent = ps;
-                globalStatusBadge.className = 'kn-badge kn-badge--project-status' + (ps === 'Shipped' ? ' kn-badge--shipped' : '');
+                projectBadge.textContent = ps;
+                projectBadge.className = 'kn-badge kn-badge--project-status' + (ps === 'Shipped' ? ' kn-badge--shipped' : '');
             }
 
-            root.querySelectorAll('.kn-nav-link').forEach(link => {
-                const linkHref = link.getAttribute('href');
-                link.classList.toggle('kn-nav-link--active', linkHref === hash);
-            });
-
-            window.scrollTo(0, 0);
+            const nav = document.getElementById('jt-nav');
+            if (nav) {
+                nav.querySelectorAll('.kn-nav-link').forEach(link => {
+                    link.classList.toggle('kn-nav-link--active', link.getAttribute('href') === fullHash);
+                });
+            }
         };
 
-        // Listen for hash changes to handle JT routes
+        // Listen for hash changes — only handle #/jt/* routes
         window.addEventListener('hashchange', function () {
             if (window.location.hash.startsWith('#/jt')) {
-                window._jtHandleRoute();
+                window._jtRender();
             }
         });
 
-        // Navigate to JT dashboard
+        // Boot into JT dashboard
         window.location.hash = '#/jt/dashboard';
-        setTimeout(() => window._jtHandleRoute(), 50);
+        setTimeout(() => window._jtRender(), 50);
     }
 };
 
+if (this.initialized) {
+    // Already booted — re-render current JT route
+    const hash = window.location.hash;
+    if (!hash.startsWith('#/jt')) window.location.hash = '#/jt/dashboard';
+    setTimeout(() => window._jtRender(), 30);
+    return;
+}
+this.initialized = true;
+
+// Load kodnest-premium.css if not already loaded
+if (!document.getElementById('kn-premium-css')) {
+    const link = document.createElement('link');
+    link.id = 'kn-premium-css';
+    link.rel = 'stylesheet';
+    link.href = 'kodnest-premium.css';
+    document.head.appendChild(link);
+}
+
+// Inject the exact HTML structure that handleRouteChange() expects:
+// - #primary-workspace  (main content area)
+// - #secondary-panel    (side panel)
+// - .kn-header          (context header)
+// - .kn-title / .kn-subtext
+// - .kn-progress / .kn-badge / .kn-badge--project-status
+// - .kn-nav with .kn-nav-link items
+// - #job-modal + #modal-content
+root.innerHTML = `
+            <div class="kn-container" id="jt-container">
+                <!-- Top Bar -->
+                <header class="kn-top-bar">
+                    <div class="kn-project-name">
+                        <span style="cursor:pointer;" onclick="window.location.hash='#/jt/dashboard'">JOB_TRACKER</span>
+                    </div>
+                    <nav class="kn-nav" id="jt-nav">
+                        <a href="#/jt/dashboard" class="kn-nav-link">Dashboard</a>
+                        <a href="#/jt/saved"     class="kn-nav-link">Saved</a>
+                        <a href="#/jt/digest"    class="kn-nav-link">Digest</a>
+                        <a href="#/jt/settings"  class="kn-nav-link">Settings</a>
+                        <a href="#/jt/test"      class="kn-nav-link">Test</a>
+                        <a href="#/jt/proof"     class="kn-nav-link">Proof</a>
+                    </nav>
+                    <div style="display:flex;align-items:center;gap:24px;">
+                        <div class="kn-progress" id="jt-progress"></div>
+                        <div class="kn-badge"    id="jt-status-badge"></div>
+                        <div class="kn-badge kn-badge--project-status" id="jt-project-badge">Not Started</div>
+                        <button class="kn-nav-toggle" onclick="window.toggleMobileMenu()" aria-label="Toggle Menu">
+                            <span></span><span></span><span></span>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Context Header -->
+                <section class="kn-header" id="jt-context-header">
+                    <h1 class="kn-title" id="jt-title">Dashboard</h1>
+                    <p class="kn-subtext" id="jt-subtext">Intelligent job discovery engine.</p>
+                </section>
+
+                <!-- Main Grid: primary workspace + secondary panel -->
+                <main class="kn-main" id="jt-main-grid">
+                    <div class="kn-workspace" id="primary-workspace"></div>
+                    <aside class="kn-panel"   id="secondary-panel"></aside>
+                </main>
+            </div>
+
+            <!-- Modal Overlay -->
+            <div id="job-modal" class="kn-modal-overlay" style="display:none;">
+                <div class="kn-modal">
+                    <button class="kn-modal-close" onclick="closeModal()">×</button>
+                    <div id="modal-content"></div>
+                </div>
+            </div>
+
+            <!-- Toast container -->
+            <div id="kn-toast-container" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;"></div>
+        `;
+
+// ── Patch handleRouteChange to work scoped inside #jobtracker-root ──
+// The original handleRouteChange uses document.getElementById / document.querySelector
+// which now correctly finds #primary-workspace, #secondary-panel etc. inside the root.
+// We just need to translate the #/jt/* hashes to the internal routes.
+
+window._jtRender = function () {
+    const fullHash = window.location.hash || '#/jt/dashboard';
+    if (!fullHash.startsWith('#/jt')) return;
+
+    // Map #/jt/foo → /foo  (or /dashboard as default)
+    const internalHash = fullHash.replace('#/jt', '') || '/dashboard';
+
+    // Temporarily spoof window.location.hash so handleRouteChange reads the right route
+    // We do this by overriding the hash read inside handleRouteChange via a wrapper
+    const origHash = window.location.hash;
+
+    // Resolve route manually (same logic as handleRouteChange)
+    let activeRoute = routes[internalHash];
+    if (activeRoute && activeRoute.alias) activeRoute = routes[activeRoute.alias];
+    if (!activeRoute) activeRoute = routes['/dashboard'];
+
+    // ── Render into the correct elements ──
+    const workspaceEl = document.getElementById('primary-workspace');
+    const panelEl = document.getElementById('secondary-panel');
+    const headerEl = document.getElementById('jt-context-header');
+    const titleEl = document.getElementById('jt-title');
+    const subtextEl = document.getElementById('jt-subtext');
+    const progressEl = document.getElementById('jt-progress');
+    const statusEl = document.getElementById('jt-status-badge');
+    const projectBadge = document.getElementById('jt-project-badge');
+
+    if (internalHash === '/' || internalHash === '') {
+        if (headerEl) headerEl.style.display = 'none';
+        if (panelEl) panelEl.style.display = 'none';
+        if (workspaceEl) workspaceEl.innerHTML = activeRoute.render ? activeRoute.render() : '';
+    } else {
+        if (headerEl) headerEl.style.display = 'block';
+        if (titleEl) titleEl.textContent = activeRoute.title || '';
+        if (subtextEl) subtextEl.textContent = activeRoute.subtext || '';
+
+        if (workspaceEl) workspaceEl.innerHTML = activeRoute.render ? activeRoute.render() : '';
+
+        // Secondary panel
+        if (panelEl) {
+            panelEl.style.display = 'block';
+            panelEl.innerHTML = `
+                        <div class="kn-card">
+                            <h3>Step ${activeRoute.step || 'Info'}</h3>
+                            <p class="kn-mt-16" style="font-size:14px;color:#666;line-height:1.6;">
+                                ${activeRoute.explanation || 'Follow the primary workspace instructions to complete this milestone.'}
+                            </p>
+                            <div class="kn-mt-24">
+                                <label class="kn-label">Action Prompt</label>
+                                <div style="background:#f9f9f3;padding:12px;border:1px solid #e0ddd5;font-family:monospace;font-size:12px;margin-bottom:16px;">
+                                    ${activeRoute.prompt || 'No prompt for this step.'}
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                    <button class="kn-button kn-button--secondary" style="font-size:11px;padding:10px;" onclick="navigator.clipboard.writeText('${(activeRoute.prompt || '').replace(/'/g, "\\'")}').then(()=>showToast('Prompt copied'))">Copy Prompt</button>
+                                    <button class="kn-button kn-button--primary"   style="font-size:11px;padding:10px;">Build in Lovable</button>
+                                    <button class="kn-button kn-button--secondary" style="font-size:11px;padding:10px;" onclick="showToast('Verified')">It Worked</button>
+                                    <button class="kn-button kn-button--secondary" style="font-size:11px;padding:10px;color:var(--color-accent);" onclick="showToast('Error logged')">Error</button>
+                                </div>
+                                <button class="kn-button kn-button--secondary" style="width:100%;margin-top:8px;font-size:11px;padding:10px;">Add Screenshot</button>
+                            </div>
+                        </div>
+                    `;
+        }
+    }
+
+    // Update progress + badges
+    if (progressEl) progressEl.innerHTML = `<span>${activeRoute.progress}</span><span>/</span><span>${activeRoute.step}</span>`;
+    if (statusEl) {
+        statusEl.textContent = activeRoute.status;
+        statusEl.className = 'kn-badge' + (activeRoute.status === 'Shipped' ? ' kn-badge--shipped' : '');
+    }
+    if (projectBadge) {
+        const ps = getProjectStatus();
+        projectBadge.textContent = ps;
+        projectBadge.className = 'kn-badge kn-badge--project-status' + (ps === 'Shipped' ? ' kn-badge--shipped' : '');
+    }
+
+    // Update nav active state
+    const nav = document.getElementById('jt-nav');
+    if (nav) {
+        nav.querySelectorAll('.kn-nav-link').forEach(link => {
+            link.classList.toggle('kn-nav-link--active', link.getAttribute('href') === fullHash);
+        });
+    }
+};
+
+// Listen for hash changes — only handle #/jt/* routes
+window.addEventListener('hashchange', function () {
+    if (window.location.hash.startsWith('#/jt')) {
+        window._jtRender();
+    }
+});
+
+// Boot into dashboard
+window.location.hash = '#/jt/dashboard';
+setTimeout(() => window._jtRender(), 50);
+    }
+};
